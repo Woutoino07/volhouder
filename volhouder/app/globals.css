@@ -1,0 +1,314 @@
+/* Kleurenpalet en stijl geïnspireerd op archer.academy: functioneel wit met
+   dieppaars-zwarte tekst, één sterke blauwe accentkleur voor alles wat
+   klikbaar of belangrijk is, zachte schaduwen in plaats van harde randen. */
+:root {
+  --bg: #f7f8fa;
+  --card: #ffffff;
+  --text: #1a0e2e;
+  --muted: #5d6b80;
+  --border: #e5e7eb;
+  --accent: #0000ff;
+  --accent-hover: #0000cc;
+  --accent-bg: #f0f0ff;
+  --accent-text: #ffffff;
+  --danger: #c0272d;
+  --danger-bg: #fdecec;
+  --success-bg: #eef0ff;
+  --warn-bg: #fff6e6;
+  --warn-text: #92600a;
+  --radius: 14px;
+  --shadow-card: 0 4px 24px -8px rgb(0 0 0 / 0.08), 0 2px 10px -4px rgb(0 0 0 / 0.04);
+  --shadow-soft: 0 6px 24px -10px rgb(0 0 0 / 0.08);
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--text);
+  font-family: Inter, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  line-height: 1.5;
+  -webkit-font-smoothing: antialiased;
+}
+
+a {
+  color: var(--accent);
+}
+
+a:hover {
+  color: var(--accent-hover);
+}
+
+.shell {
+  max-width: 720px;
+  margin: 0 auto;
+  padding: 0 20px 64px;
+}
+
+nav.topbar {
+  border-bottom: 1px solid var(--border);
+  background: var(--card);
+  margin-bottom: 32px;
+}
+
+nav.topbar .inner {
+  max-width: 720px;
+  margin: 0 auto;
+  padding: 16px 20px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+nav.topbar .brand {
+  font-weight: 800;
+  letter-spacing: -0.02em;
+  text-decoration: none;
+  color: var(--text);
+  font-size: 17px;
+}
+
+nav.topbar .links {
+  display: flex;
+  gap: 4px;
+  flex-wrap: wrap;
+  font-size: 14px;
+}
+
+nav.topbar .links a {
+  text-decoration: none;
+  color: var(--muted);
+  padding: 7px 14px;
+  border-radius: 999px;
+  transition: background 0.15s ease, color 0.15s ease;
+}
+
+nav.topbar .links a:hover {
+  color: var(--text);
+  background: var(--bg);
+}
+
+h1 {
+  font-size: 23px;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  margin: 0 0 6px;
+}
+
+h2 {
+  font-size: 16px;
+  font-weight: 700;
+  margin: 0 0 12px;
+}
+
+.subtitle {
+  color: var(--muted);
+  margin: 0 0 24px;
+  font-size: 14px;
+}
+
+.card {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow-card);
+  padding: 20px;
+  margin-bottom: 16px;
+}
+
+.field {
+  margin-bottom: 14px;
+}
+
+.field label {
+  display: block;
+  font-size: 13px;
+  font-weight: 600;
+  margin-bottom: 5px;
+}
+
+.field .hint {
+  font-size: 12px;
+  color: var(--muted);
+  margin-top: 4px;
+}
+
+input[type="text"],
+input[type="email"],
+input[type="password"],
+input[type="time"],
+input[type="date"],
+input[type="number"],
+select,
+textarea {
+  width: 100%;
+  padding: 10px 12px;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  font-size: 14px;
+  font-family: inherit;
+  background: #fff;
+  color: var(--text);
+}
+
+input:focus,
+select:focus,
+textarea:focus {
+  outline: none;
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px var(--accent-bg);
+}
+
+textarea {
+  resize: vertical;
+  min-height: 60px;
+}
+
+.checkbox-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.days-grid {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
+.day-toggle {
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  padding: 6px 12px;
+  font-size: 13px;
+  background: #fff;
+  cursor: pointer;
+}
+
+.day-toggle.active {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: var(--accent-text);
+}
+
+button, .btn {
+  display: inline-block;
+  background: var(--accent);
+  color: var(--accent-text);
+  border: none;
+  border-radius: 999px;
+  padding: 10px 18px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  text-decoration: none;
+  transition: background 0.15s ease, transform 0.05s ease;
+}
+
+button:hover:not(:disabled) {
+  background: var(--accent-hover);
+}
+
+button:active:not(:disabled) {
+  transform: scale(0.98);
+}
+
+button:disabled {
+  opacity: 0.55;
+  cursor: default;
+}
+
+button.secondary, .btn.secondary {
+  background: transparent;
+  color: var(--text);
+  border: 1px solid var(--border);
+}
+
+button.secondary:hover:not(:disabled) {
+  background: var(--bg);
+}
+
+button.danger {
+  background: var(--danger);
+}
+
+button.danger:hover:not(:disabled) {
+  background: #a01f24;
+}
+
+.row {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+  align-items: center;
+}
+
+.badge {
+  display: inline-block;
+  font-size: 12px;
+  font-weight: 700;
+  padding: 4px 11px;
+  border-radius: 999px;
+}
+
+.badge.pending { background: var(--warn-bg); color: var(--warn-text); }
+.badge.submitted { background: var(--warn-bg); color: var(--warn-text); }
+.badge.approved { background: var(--success-bg); color: var(--accent); }
+.badge.rejected { background: var(--danger-bg); color: var(--danger); }
+.badge.missed { background: var(--danger-bg); color: var(--danger); }
+.badge.disputed { background: var(--warn-bg); color: var(--warn-text); }
+
+.commitment-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 14px 0;
+  border-bottom: 1px solid var(--border);
+  text-decoration: none;
+  color: var(--text);
+}
+
+.commitment-item:last-child {
+  border-bottom: none;
+}
+
+.commitment-item .meta {
+  font-size: 12px;
+  color: var(--muted);
+}
+
+.error-box {
+  background: var(--danger-bg);
+  color: var(--danger);
+  border-radius: 10px;
+  padding: 10px 14px;
+  font-size: 13px;
+  margin-bottom: 14px;
+}
+
+.notice-box {
+  background: var(--success-bg);
+  color: var(--accent);
+  border-radius: 10px;
+  padding: 10px 14px;
+  font-size: 13px;
+  margin-bottom: 14px;
+}
+
+.empty {
+  color: var(--muted);
+  font-size: 14px;
+  padding: 8px 0;
+}
+
+img.proof-photo {
+  max-width: 100%;
+  border-radius: 10px;
+  margin-top: 10px;
+  display: block;
+}
