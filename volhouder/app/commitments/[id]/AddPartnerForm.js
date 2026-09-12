@@ -17,11 +17,14 @@ export default function AddPartnerForm({ commitmentId }) {
     setError(null);
     setLoading(true);
 
-    const { data: invite, error: inviteError } = await supabase
-      .from("invites")
-      .insert({ commitment_id: commitmentId, email: email.trim() })
-      .select()
-      .single();
+    const token = crypto.randomUUID();
+
+    const { error: inviteError } = await supabase.from("invites").insert({
+      id: crypto.randomUUID(),
+      commitment_id: commitmentId,
+      email: email.trim(),
+      token,
+    });
 
     setLoading(false);
 
@@ -31,7 +34,7 @@ export default function AddPartnerForm({ commitmentId }) {
     }
 
     const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || window.location.origin;
-    setLink(`${siteUrl}/invite/${invite.token}`);
+    setLink(`${siteUrl}/invite/${token}`);
   }
 
   if (link) {
