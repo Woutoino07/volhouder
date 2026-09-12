@@ -5,23 +5,17 @@ import { createClient } from "@/lib/supabase/server";
 import { cleanupOldPhotos } from "@/lib/cleanupOldPhotos";
 import { computeStats } from "@/lib/stats";
 import {
-  CheckCircle2, XCircle, Clock, MinusCircle, Flame, Zap, Star, Plus, Target, User, ChevronRight, AlertCircle
+  Flame, ChevronRight, Clock, Plus, Target, CheckCircle2,
+  XCircle, AlertCircle, User,
 } from "lucide-react";
 
-const STATUS_LABEL = {
-  pending: "nog te doen",
-  submitted: "ingediend",
-  approved: "gelukt",
-  rejected: "afgekeurd",
-  missed: "gemist",
-  disputed: "betwist",
+const FREQ_LABEL = {
+  daily: "Dagelijks",
+  weekly: "Wekelijks",
+  once: "Eenmalig",
 };
 
-const FREQ_LABEL = {
-  daily: "dagelijks",
-  weekly: "wekelijks",
-  once: "eenmalig",
-};
+const DAY_LABELS = ["Ma", "Di", "Wo", "Do", "Vr", "Za", "Zo"];
 
 function getGreeting() {
   const h = new Date().getHours();
@@ -30,7 +24,7 @@ function getGreeting() {
   return "Goedenavond";
 }
 
-function formatDate() {
+function getFullDate() {
   return new Date().toLocaleDateString("nl-BE", {
     weekday: "long",
     day: "numeric",
@@ -38,15 +32,207 @@ function formatDate() {
   });
 }
 
-function StatusIcon({ status, active }) {
-  if (!active) return <MinusCircle size={14} strokeWidth={1.75} style={{ color: "var(--muted)" }} />;
-  if (status === "pending") return <Flame size={14} strokeWidth={1.75} style={{ color: "var(--warning)" }} />;
-  if (status === "submitted") return <Clock size={14} strokeWidth={1.75} style={{ color: "var(--muted)" }} />;
-  if (status === "approved") return <CheckCircle2 size={14} strokeWidth={1.75} style={{ color: "var(--success)" }} />;
-  if (status === "rejected" || status === "missed") return <XCircle size={14} strokeWidth={1.75} style={{ color: "var(--danger)" }} />;
-  return null;
+function capitalize(str) {
+  return str ? str.charAt(0).toUpperCase() + str.slice(1) : str;
 }
 
+function getLast7Days() {
+  const days = [];
+  for (let i = 6; i >= 0; i--) {
+    const d = new Date();
+    d.setDate(d.getDate() - i);
+    days.push(d.toISOString().slice(0, 10));
+  }
+  return days;
+}
+
+function getTodayStr() {
+  return new Date().toISOString().slice(0, 10);
+}
+
+// ── Today Card ────────────────────────────────────
+function TodayCard({ commitment, checkin, stats }) {
+  const status = checkin?.status ?? "pending";
+  const href = `/commitments/${commitment.id}`;
+
+  let accentClass = "pending";
+  if (status === "approved") accentClass = "approved";
+  else if (status === "submitted") accentClass = "submitted";
+  else if (status === "missed" || status === "rejected") accentClass = "missed";
+
+  return (
+    <Link href={href} className="today-card">
+      <div className={`today-card-accent ${accentClass}`} />
+      <div className="today-card-body">
+        <div className="today-card-title">{commitment.title}</div>
+
+        {status === "pending" && (
+          <>
+            <div className="today-card-meta">
+              <span>{FREQ_LABEL[commitment.frequency]}</span>
+              {commitment.deadline_time && (
+                <>
+                  <span>·</span>
+                  <span style={{ display: "inline-flex", alignItems: "center", gap: 3 }}>
+                    <Clock size={11} strokeWidth={1.75} />
+                    vóór {commitment.deadline_time.slice(0, 5)}
+                  </span>
+                </>
+              )}
+            </div>
+            <div className="today-card-footer">
+              {stats.streak > 0 ? (
+                <span className="streak-badge">
+                  <Flame size={14} strokeWidth={2} />
+                  {stats.streak} {stats.streak === 1 ? "dag" : "dagen"}
+                </span>
+              ) : (
+                <span />
+              )}
+              <span className="checkin-cta">
+                Check in
+                <ChevronRight size={14} strokeWidth={2} />
+              </span>
+            </div>
+          </>
+        )}
+
+        {status === "submitted" && (
+          <>
+            <div className="today-card-meta">
+              <span>Ingediend · wacht op beoordeling</span>
+            </div>
+            {stats.total > 0 && (
+              <div style={{ marginTop: 12 }}>
+                <div style={{ display: "flex", justifyContent: "space-between", fontSize: 11, color: "var(--muted)", marginBottom: 5 }}>
+                  <span>Slaagrate</span>
+                  <span>{stats.rate ?? 0}%</span>
+                </div>
+                <div className="streak-bar">
+                  <div className="streak-bar-fill" style={{ width: `${stats.rate ?? 0}%` }} />
+                </div>
+              </div>
+            )}
+          </>
+        )}
+
+        {status === "approved" && (
+          <div className="today-card-meta" style={{ marginTop: 4, display: "flex", alignItems: "center", gap: 6 }}>
+            <CheckCircle2 size={13} strokeWidth={2} style={{ color: "var(--success)" }} />
+            <span>Gelukt vandaag</span>
+            {stats.streak > 0 && (
+              <>
+                <span>·</span>
+                <span className="streak-badge">
+                  <Flame size={13} strokeWidth={2} />
+                  {stats.streak} {stats.streak === 1 ? "dag" : "dagen"} op rij
+                </span>
+              </>
+            )}
+          </div>
+        )}
+
+        {(status === "missed" || status === "rejected") && (
+          <div className="today-card-meta" style={{ marginTop: 4, display: "flex", alignItems: "center", gap: 6 }}>
+            <XCircle size={13} strokeWidth={2} style={{ color: "var(--muted)" }} />
+            <span>Gemist · morgen is een nieuwe kans</span>
+          </div>
+        )}
+      </div>
+    </Link>
+  );
+}
+
+// ── Progress Card ─────────────────────────────────
+function ProgressCard({ commitment, history, stats }) {
+  const last7 = getLast7Days();
+  const today = getTodayStr();
+  const historyMap = {};
+  for (const h of history || []) {
+    historyMap[h.due_date] = h.status;
+  }
+
+  return (
+    <div className="progress-card">
+      <div className="progress-card-header">
+        <span className="progress-card-title">{commitment.title}</span>
+        <div className="progress-card-stats">
+          {stats.streak > 0 && (
+            <span style={{ display: "inline-flex", alignItems: "center", gap: 3, color: "var(--warning)", fontWeight: 700 }}>
+              <Flame size={12} strokeWidth={2} />
+              {stats.streak}
+            </span>
+          )}
+          {stats.rate !== null && <span>{stats.rate}%</span>}
+        </div>
+      </div>
+
+      <div style={{ display: "flex", alignItems: "flex-end", gap: 6 }}>
+        {/* Day labels row */}
+        <div style={{ flex: 1 }}>
+          <div style={{ display: "flex", gap: 6, marginBottom: 4 }}>
+            {last7.map((dateStr) => {
+              // Day of week: Mon=1 … Sun=0 in JS; map to 0=Ma … 6=Zo
+              const d = new Date(dateStr + "T12:00:00");
+              const jsDay = d.getDay(); // 0=Sun, 1=Mon ... 6=Sat
+              const idx = jsDay === 0 ? 6 : jsDay - 1;
+              return (
+                <div
+                  key={dateStr}
+                  style={{
+                    width: 28,
+                    textAlign: "center",
+                    fontSize: 9,
+                    fontWeight: 700,
+                    color: "var(--muted-light)",
+                    letterSpacing: 0,
+                    flexShrink: 0,
+                  }}
+                >
+                  {DAY_LABELS[idx]}
+                </div>
+              );
+            })}
+          </div>
+          <div className="week-dots">
+            {last7.map((dateStr) => {
+              const status = historyMap[dateStr];
+              let dotClass = "future";
+              if (status === "approved") dotClass = "approved";
+              else if (status === "missed" || status === "rejected") dotClass = "missed";
+              else if (status === "submitted") dotClass = "submitted";
+              else if (status === "pending" && dateStr === today) dotClass = "pending";
+              else if (!status && dateStr < today) dotClass = "not-due";
+              else if (!status && dateStr === today) dotClass = "pending";
+
+              return (
+                <div key={dateStr} className={`week-dot ${dotClass}`} />
+              );
+            })}
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ── Not Today Item ────────────────────────────────
+function NotTodayItem({ commitment }) {
+  const nextLabel = commitment.frequency === "daily"
+    ? "Morgen"
+    : commitment.frequency === "weekly"
+    ? "Volgende week"
+    : "Eenmalig";
+
+  return (
+    <Link href={`/commitments/${commitment.id}`} className="not-today-item">
+      <span style={{ fontWeight: 500 }}>{commitment.title}</span>
+      <span className="not-today-next">{nextLabel}</span>
+    </Link>
+  );
+}
+
+// ── Page ──────────────────────────────────────────
 export default async function DashboardPage() {
   const supabase = createClient();
   const {
@@ -62,7 +248,7 @@ export default async function DashboardPage() {
     .eq("id", user.id)
     .single();
 
-  const displayName = profile?.display_name || user.email?.split("@")[0] || "jij";
+  const firstName = (profile?.display_name || user.email?.split("@")[0] || "jij").split(" ")[0];
 
   const { data: commitments, error } = await supabase
     .from("commitments")
@@ -90,6 +276,23 @@ export default async function DashboardPage() {
     rows.push({ commitment: c, checkin, partners: partnerRows || [], stats });
   }
 
+  // History for progress cards (last 7 days)
+  const activeCommitmentIds = (commitments || []).filter((c) => c.active).map((c) => c.id);
+  let historyByCommitment = {};
+  if (activeCommitmentIds.length > 0) {
+    const { data: allHistory } = await supabase
+      .from("check_ins")
+      .select("commitment_id, due_date, status")
+      .in("commitment_id", activeCommitmentIds)
+      .gte("due_date", new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString().slice(0, 10))
+      .order("due_date", { ascending: false });
+
+    for (const h of allHistory || []) {
+      (historyByCommitment[h.commitment_id] ||= []).push(h);
+    }
+  }
+
+  // Partner-review count
   const { data: myPartnerCommitments } = await supabase
     .from("commitment_partners")
     .select("commitment_id")
@@ -106,6 +309,7 @@ export default async function DashboardPage() {
     pendingReviewCount = count || 0;
   }
 
+  // Ledger
   const { data: openDebts } = await supabase
     .from("ledger_entries")
     .select("amount, debtor_id")
@@ -115,104 +319,39 @@ export default async function DashboardPage() {
   const owedByMe = (openDebts || [])
     .filter((d) => d.debtor_id === user.id)
     .reduce((sum, d) => sum + Number(d.amount), 0);
-  const owedToMe = (openDebts || [])
-    .filter((d) => d.debtor_id !== user.id)
-    .reduce((sum, d) => sum + Number(d.amount), 0);
 
-  const totalStreak = rows.reduce((max, r) => Math.max(max, r.stats.streak || 0), 0);
-  const totalSuccess = rows.reduce((sum, r) => sum + (r.stats.successCount || 0), 0);
-  const totalCheckins = rows.reduce((sum, r) => sum + (r.stats.total || 0), 0);
-  const overallRate = totalCheckins > 0 ? Math.round((totalSuccess / totalCheckins) * 100) : 0;
-
-  const pendingToday = rows.filter((r) => r.checkin?.status === "pending").length;
+  // Split rows
+  const todayRows = rows.filter((r) => r.commitment.active && r.checkin);
+  const notTodayRows = rows.filter((r) => r.commitment.active && !r.checkin);
+  const activeRows = rows.filter((r) => r.commitment.active);
 
   return (
     <>
       <Nav pendingReviewCount={pendingReviewCount} />
       <div className="shell">
-        <div className="page-header">
-          <p className="greeting">{getGreeting()}, {displayName}</p>
-          <p className="date-label" style={{ textTransform: "capitalize" }}>{formatDate()}</p>
+        {/* Header */}
+        <div className="dashboard-header">
+          <div className="dashboard-greeting">{getGreeting()}, {firstName}</div>
+          <div className="dashboard-date">{capitalize(getFullDate())}</div>
         </div>
 
         <NotificationSetup />
 
         {error && <div className="error-box">{error.message}</div>}
 
+        {/* Debt banner */}
         {owedByMe > 0 && (
-          <Link
-            href="/ledger"
-            style={{
-              display: "flex",
-              alignItems: "center",
-              gap: 8,
-              padding: "10px 14px",
-              borderRadius: "var(--radius)",
-              background: "rgba(var(--danger-rgb, 220,53,69), 0.08)",
-              border: "1px solid rgba(var(--danger-rgb, 220,53,69), 0.25)",
-              color: "var(--danger)",
-              fontSize: 13,
-              fontWeight: 600,
-              marginBottom: 4,
-              textDecoration: "none",
-            }}
-          >
-            <AlertCircle size={14} strokeWidth={1.75} style={{ flexShrink: 0 }} />
-            <span>Je bent €{owedByMe.toFixed(2)} verschuldigd</span>
-            <ChevronRight size={14} strokeWidth={1.75} style={{ marginLeft: "auto", flexShrink: 0 }} />
+          <Link href="/ledger" className="debt-banner">
+            <span style={{ display: "inline-flex", alignItems: "center", gap: 7 }}>
+              <AlertCircle size={15} strokeWidth={2} style={{ flexShrink: 0 }} />
+              Je bent €{owedByMe.toFixed(2)} verschuldigd
+            </span>
+            <ChevronRight size={15} strokeWidth={2} style={{ flexShrink: 0 }} />
           </Link>
         )}
 
-        {rows.length > 0 && (
-          <>
-            {pendingToday > 0 && (
-              <div style={{ marginBottom: 12 }}>
-                <span className="badge pending" style={{ fontSize: 12, padding: "4px 10px", display: "inline-flex", alignItems: "center", gap: 4 }}>
-                  <Flame size={12} strokeWidth={1.75} />
-                  {pendingToday} te doen vandaag
-                </span>
-              </div>
-            )}
-            <div className="stats-row">
-              <div className="stat-chip">
-                <div className="value" style={{ display: "flex", alignItems: "center", gap: 4, justifyContent: "center" }}>
-                  {totalStreak === 0
-                    ? <Zap size={16} strokeWidth={1.75} style={{ color: "var(--warning)" }} />
-                    : totalStreak > 7
-                    ? <><Flame size={16} strokeWidth={1.75} style={{ color: "var(--warning)" }} /> {totalStreak}</>
-                    : totalStreak}
-                </div>
-                <div className="label">
-                  {totalStreak === 0 ? "Start vandaag" : totalStreak > 7 ? "dagen — geweldig!" : "Beste streak"}
-                </div>
-              </div>
-              <div className="stat-chip">
-                <div className="value" style={{ display: "flex", alignItems: "center", gap: 4, justifyContent: "center" }}>
-                  {overallRate > 80 ? <><Star size={14} strokeWidth={1.75} style={{ color: "var(--warning)" }} /> {overallRate}%</> : `${overallRate}%`}
-                </div>
-                <div className="label">{overallRate > 80 ? "uitstekend" : "Slaagrate"}</div>
-              </div>
-              {owedByMe > 0 && (
-                <div className="stat-chip">
-                  <div className="value" style={{ color: "var(--danger)" }}>€{owedByMe.toFixed(0)}</div>
-                  <div className="label">Verschuldigd</div>
-                </div>
-              )}
-              {owedToMe > 0 && (
-                <div className="stat-chip">
-                  <div className="value" style={{ color: "var(--success)" }}>€{owedToMe.toFixed(0)}</div>
-                  <div className="label">Tegoed</div>
-                </div>
-              )}
-              <div className="stat-chip">
-                <div className="value">{rows.length}</div>
-                <div className="label">Commitments</div>
-              </div>
-            </div>
-          </>
-        )}
-
-        {rows.length === 0 ? (
+        {/* Empty state */}
+        {rows.length === 0 && (
           <div className="card">
             <div className="empty-state">
               <div className="empty-state-icon">
@@ -223,102 +362,76 @@ export default async function DashboardPage() {
               <Link href="/commitments/new" className="btn">Begin nu</Link>
             </div>
           </div>
-        ) : (
-          rows.map(({ commitment, checkin, partners, stats }) => {
-            const isOwner = commitment.owner_id === user.id;
-            const partnerLabel = isOwner
-              ? partners.length > 0
-                ? partners.map((p) => p.profile?.display_name || p.profile?.email).join(", ")
-                : null
-              : (commitment.owner?.display_name || commitment.owner?.email);
+        )}
 
-            const rate = stats.total > 0 ? Math.round((stats.successCount / stats.total) * 100) : 0;
-            const isPending = checkin?.status === "pending";
-            const noPartner = isOwner && partners.length === 0;
+        {/* Vandaag sectie */}
+        {rows.length > 0 && (
+          <>
+            <div className="section-header">
+              <span className="section-title">Vandaag</span>
+              <span className="section-pill">
+                {todayRows.length} {todayRows.length === 1 ? "commitment" : "commitments"}
+              </span>
+            </div>
 
-            const pausedDate = !commitment.active && commitment.paused_at
-              ? new Date(commitment.paused_at).toLocaleDateString("nl-BE", { day: "numeric", month: "long" })
-              : null;
+            {todayRows.length === 0 && (
+              <div style={{
+                background: "var(--glass-bg)",
+                border: "1px solid var(--glass-border)",
+                borderRadius: "var(--radius)",
+                padding: "28px 20px",
+                textAlign: "center",
+                color: "var(--muted)",
+                fontSize: 14,
+                marginBottom: 10,
+                boxShadow: "var(--glass-shadow)",
+              }}>
+                Geen commitments vandaag — geniet ervan.
+              </div>
+            )}
 
-            return (
-              <Link
+            {todayRows.map(({ commitment, checkin, stats }) => (
+              <TodayCard
                 key={commitment.id}
-                href={`/commitments/${commitment.id}`}
-                className="commitment-card"
-              >
-                <div className="commitment-card-header">
-                  <span className="commitment-card-title" style={{ display: "flex", alignItems: "center", gap: 6 }}>
-                    {(checkin || !commitment.active) && (
-                      <StatusIcon status={checkin?.status} active={commitment.active} />
-                    )}
-                    {commitment.title}
-                  </span>
-                  <div style={{ display: "flex", alignItems: "center", gap: 6, flexShrink: 0 }}>
-                    {stats.streak > 0 && commitment.active && (
-                      <span style={{ display: "inline-flex", alignItems: "center", gap: 2, fontSize: 12, color: "var(--warning)", fontWeight: 600 }}>
-                        <Flame size={12} strokeWidth={1.75} />
-                        {stats.streak}
-                      </span>
-                    )}
-                    {!commitment.active ? (
-                      <span className="badge paused">
-                        {pausedDate ? `gepauzeerd op ${pausedDate}` : "gepauzeerd"}
-                      </span>
-                    ) : checkin ? (
-                      <span className={`badge ${checkin.status}`}>{STATUS_LABEL[checkin.status]}</span>
-                    ) : (
-                      <span className="badge paused">niet vandaag</span>
-                    )}
-                  </div>
-                </div>
+                commitment={commitment}
+                checkin={checkin}
+                stats={stats}
+              />
+            ))}
+          </>
+        )}
 
-                <div className="commitment-card-meta">
-                  <span className="badge freq">{FREQ_LABEL[commitment.frequency]}</span>
-                  <span className="badge freq" style={{ display: "inline-flex", alignItems: "center", gap: 3 }}>
-                    <Clock size={11} strokeWidth={1.75} />
-                    {commitment.deadline_time?.slice(0, 5)}
-                  </span>
-                  {partnerLabel && (
-                    <span style={{ fontSize: 12, color: "var(--muted)", display: "inline-flex", alignItems: "center", gap: 3 }}>
-                      <User size={11} strokeWidth={1.75} />
-                      {partnerLabel}
-                    </span>
-                  )}
-                  {noPartner && (
-                    <span style={{ fontSize: 11, color: "var(--muted)", display: "inline-flex", alignItems: "center", gap: 3, fontStyle: "italic" }}>
-                      <User size={11} strokeWidth={1.75} />
-                      Geen partner — voeg er een toe
-                    </span>
-                  )}
-                </div>
+        {/* Progressie sectie */}
+        {activeRows.length > 0 && (
+          <>
+            <div className="section-header">
+              <span className="section-title">Progressie</span>
+              <span className="section-subtitle">Afgelopen 7 dagen</span>
+            </div>
 
-                {stats.total > 0 && (
-                  <div>
-                    <div style={{ display: "flex", justifyContent: "space-between", fontSize: 11, color: "var(--muted)", marginBottom: 4 }}>
-                      <span style={{ display: "flex", alignItems: "center", gap: 3 }}>
-                        {stats.streak > 0
-                          ? <><Flame size={11} strokeWidth={1.75} style={{ color: "var(--warning)" }} /> {stats.streak} dagen op rij</>
-                          : "Nog geen streak"}
-                      </span>
-                      <span>{rate}%</span>
-                    </div>
-                    <div className="streak-bar">
-                      <div
-                        className={`streak-bar-fill${checkin?.status === "approved" ? " success" : ""}`}
-                        style={{ width: `${rate}%` }}
-                      />
-                    </div>
-                  </div>
-                )}
+            {activeRows.map(({ commitment, stats }) => (
+              <ProgressCard
+                key={commitment.id}
+                commitment={commitment}
+                history={historyByCommitment[commitment.id] || []}
+                stats={stats}
+              />
+            ))}
+          </>
+        )}
 
-                {isPending && commitment.active && (
-                  <div style={{ marginTop: 12 }}>
-                    <div className="btn-checkin">Check in</div>
-                  </div>
-                )}
-              </Link>
-            );
-          })
+        {/* Niet vandaag sectie */}
+        {notTodayRows.length > 0 && (
+          <>
+            <div className="section-header" style={{ marginTop: 28 }}>
+              <span className="section-title" style={{ fontSize: 15, color: "var(--muted)" }}>Niet vandaag</span>
+            </div>
+            <div className="not-today-list">
+              {notTodayRows.map(({ commitment }) => (
+                <NotTodayItem key={commitment.id} commitment={commitment} />
+              ))}
+            </div>
+          </>
         )}
       </div>
 
