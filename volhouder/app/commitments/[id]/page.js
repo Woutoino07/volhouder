@@ -11,7 +11,6 @@ import PauseButton from "./PauseButton";
 import AddPartnerForm from "./AddPartnerForm";
 import RemovePartnerButton from "./RemovePartnerButton";
 import DeleteCommitmentButton from "./DeleteCommitmentButton";
-import CalendarHeatmap from "./CalendarHeatmap";
 import { ArrowLeft, Pencil, Flame, Users, Clock, CheckCircle2 } from "lucide-react";
 
 const STATUS_LABEL = {
@@ -296,19 +295,6 @@ export default async function CommitmentDetailPage({ params }) {
           </div>
         )}
 
-        <div className="card">
-          <h2>Kalender</h2>
-          <div className="legend" style={{ marginBottom: 12 }}>
-            <span><span style={{display:"inline-block",width:10,height:10,borderRadius:2,background:"#16A34A",marginRight:4}}/>gelukt</span>
-            <span><span style={{display:"inline-block",width:10,height:10,borderRadius:2,background:"#DC2626",marginRight:4}}/>gemist</span>
-            <span><span style={{display:"inline-block",width:10,height:10,borderRadius:2,background:"#D97706",marginRight:4}}/>wacht</span>
-          </div>
-          <CalendarHeatmap
-            history={history || []}
-            frequency={commitment.frequency}
-            daysOfWeek={commitment.days_of_week}
-          />
-        </div>
 
         <div className="card-section">
           <div className="card-section-header">

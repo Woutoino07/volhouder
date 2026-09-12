@@ -16,6 +16,7 @@ export default function CheckinForm({ commitmentId, checkin, proofType, deadline
   const [success, setSuccess] = useState(false);
 
   const needsPhoto = proofType === "photo" || proofType === "both";
+  const photoRequired = needsPhoto;
 
   function handleCapture(file) {
     setPhotoFile(file || null);
@@ -23,7 +24,7 @@ export default function CheckinForm({ commitmentId, checkin, proofType, deadline
 
   async function handleSubmit(e) {
     e.preventDefault();
-    if (needsPhoto && !photoFile) {
+    if (photoRequired && !photoFile) {
       setError("Maak eerst een foto als bewijs.");
       return;
     }
@@ -87,11 +88,9 @@ export default function CheckinForm({ commitmentId, checkin, proofType, deadline
 
         {error && <div className="error-box" style={{ margin: "0 20px 12px" }}>{error}</div>}
 
-        {needsPhoto && (
-          <div className="photo-section">
-            <CameraCapture onCapture={handleCapture} />
-          </div>
-        )}
+        <div className="photo-section">
+          <CameraCapture onCapture={handleCapture} required={photoRequired} />
+        </div>
 
         <div className="note-section">
           <textarea
@@ -105,7 +104,7 @@ export default function CheckinForm({ commitmentId, checkin, proofType, deadline
         <button
           type="submit"
           className="btn submit-checkin-btn"
-          disabled={loading || (needsPhoto && !photoFile)}
+          disabled={loading || (photoRequired && !photoFile)}
         >
           {loading ? "Bezig..." : "Indienen"}
         </button>
