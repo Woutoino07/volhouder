@@ -2,6 +2,8 @@ import Nav from "@/components/Nav";
 import { createClient } from "@/lib/supabase/server";
 import ConnectStripeButton from "@/components/ConnectStripeButton";
 import NotificationSetup from "@/components/NotificationSetup";
+import DisplayNameEditor from "./DisplayNameEditor";
+import SignOutButton from "./SignOutButton";
 
 export default async function AccountPage() {
   const supabase = createClient();
@@ -32,9 +34,12 @@ export default async function AccountPage() {
         <div className="card">
           <h2>Profiel</h2>
           <div className="avatar">{initial}</div>
-          <div style={{ fontSize: 14, color: "var(--muted)" }}>
-            <div>{profile?.display_name || "—"}</div>
-            <div>{profile?.email || user.email}</div>
+          <div style={{ fontSize: 14, color: "var(--muted)", marginTop: 8 }}>
+            <div style={{ marginBottom: 4 }}>{profile?.email || user.email}</div>
+          </div>
+          <div>
+            <div style={{ fontSize: 12, color: "var(--muted)", marginBottom: 2 }}>Weergavenaam</div>
+            <DisplayNameEditor userId={user.id} initialName={profile?.display_name || ""} />
           </div>
         </div>
 
@@ -71,6 +76,15 @@ export default async function AccountPage() {
             </p>
           </div>
         )}
+
+        <div className="card">
+          <h2>Sessie</h2>
+          <SignOutButton />
+        </div>
+
+        <div style={{ textAlign: "center", fontSize: 12, color: "var(--muted)", padding: "24px 0 8px" }}>
+          Volhouder · Versie 1.0 · Gebouwd met toewijding
+        </div>
       </div>
     </>
   );

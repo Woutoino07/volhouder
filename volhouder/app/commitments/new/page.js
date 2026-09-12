@@ -16,6 +16,18 @@ const DAYS = [
   { value: 0, label: "zo" },
 ];
 
+const PROOF_OPTIONS = [
+  { value: "photo", icon: "📷", label: "Foto", sub: "Foto verplicht" },
+  { value: "checkbox", icon: "✓", label: "Checkbox", sub: "Simpel afvinken" },
+  { value: "both", icon: "📷✓", label: "Beide", sub: "Foto of afvinken" },
+];
+
+const FREQ_OPTIONS = [
+  { value: "daily", label: "Dagelijks" },
+  { value: "weekly", label: "Wekelijks" },
+  { value: "once", label: "Eénmalig" },
+];
+
 export default function NewCommitmentPage() {
   const router = useRouter();
   const supabase = createClient();
@@ -177,11 +189,30 @@ export default function NewCommitmentPage() {
           <div className="card">
             <div className="field">
               <label>Frequentie</label>
-              <select value={frequency} onChange={(e) => setFrequency(e.target.value)}>
-                <option value="daily">Elke dag</option>
-                <option value="weekly">Bepaalde dagen van de week</option>
-                <option value="once">Eenmalig</option>
-              </select>
+              <div style={{ display: "flex", gap: 8, marginTop: 4 }}>
+                {FREQ_OPTIONS.map((opt) => (
+                  <button
+                    key={opt.value}
+                    type="button"
+                    onClick={() => setFrequency(opt.value)}
+                    style={{
+                      flex: 1,
+                      padding: "8px 6px",
+                      fontSize: 13,
+                      fontWeight: 600,
+                      borderRadius: 20,
+                      border: frequency === opt.value ? "none" : "1px solid var(--border)",
+                      background: frequency === opt.value ? "var(--navy)" : "var(--surface-secondary)",
+                      color: frequency === opt.value ? "#fff" : "var(--text)",
+                      cursor: "pointer",
+                      fontFamily: "inherit",
+                      transition: "all 0.15s",
+                    }}
+                  >
+                    {opt.label}
+                  </button>
+                ))}
+              </div>
             </div>
 
             {frequency === "weekly" && (
@@ -228,11 +259,36 @@ export default function NewCommitmentPage() {
           <div className="card">
             <div className="field">
               <label>Bewijs</label>
-              <select value={proofType} onChange={(e) => setProofType(e.target.value)}>
-                <option value="photo">Foto verplicht</option>
-                <option value="checkbox">Simpel afvinken</option>
-                <option value="both">Foto of afvinken</option>
-              </select>
+              <div style={{ display: "flex", gap: 8, marginTop: 4 }}>
+                {PROOF_OPTIONS.map((opt) => (
+                  <button
+                    key={opt.value}
+                    type="button"
+                    onClick={() => setProofType(opt.value)}
+                    style={{
+                      flex: 1,
+                      padding: "12px 8px",
+                      fontSize: 12,
+                      fontWeight: 600,
+                      borderRadius: "var(--radius)",
+                      border: proofType === opt.value ? "2px solid var(--navy)" : "1px solid var(--border)",
+                      background: proofType === opt.value ? "var(--navy)" : "var(--surface-secondary)",
+                      color: proofType === opt.value ? "#fff" : "var(--text)",
+                      cursor: "pointer",
+                      fontFamily: "inherit",
+                      display: "flex",
+                      flexDirection: "column",
+                      alignItems: "center",
+                      gap: 4,
+                      transition: "all 0.15s",
+                    }}
+                  >
+                    <span style={{ fontSize: 20 }}>{opt.icon}</span>
+                    <span>{opt.label}</span>
+                    <span style={{ fontSize: 10, fontWeight: 400, opacity: 0.8 }}>{opt.sub}</span>
+                  </button>
+                ))}
+              </div>
             </div>
 
             <div className="field" style={{ marginBottom: 0 }}>

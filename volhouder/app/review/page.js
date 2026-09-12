@@ -2,6 +2,7 @@ import Link from "next/link";
 import Nav from "@/components/Nav";
 import { createClient } from "@/lib/supabase/server";
 import { CheckSquare, ChevronRight } from "lucide-react";
+import ReviewActions from "./ReviewActions";
 
 function relativeDate(dateStr) {
   if (!dateStr) return dateStr;
@@ -38,7 +39,17 @@ export default async function ReviewPage() {
       .in("commitment_id", commitmentIds)
       .eq("status", "submitted")
       .order("due_date", { ascending: true });
-    pending = data || [];
+
+    const raw = data || [];
+    pending = await Promise.all(
+      raw.map(async (ci) => {
+        if (!ci.photo_path) return ci;
+        const { data: signed } = await supabase.storage
+          .from("proofs")
+          .createSignedUrl(ci.photo_path, 1800);
+        return { ...ci, photo_url: signed?.signedUrl };
+      })
+    );
 
     const { data: disputedData } = await supabase
       .from("check_ins")
@@ -89,20 +100,36 @@ export default async function ReviewPage() {
             </div>
           )}
           {pending.map((ci) => (
-            <Link key={ci.id} href={`/commitments/${ci.commitments.id}`} className="list-item">
-              <div style={{ flex: 1, marginRight: 12 }}>
-                <div style={{ fontWeight: 600, fontSize: 14 }}>{ci.commitments.title}</div>
-                <div className="meta">
-                  {relativeDate(ci.due_date)} · {ci.commitments.owner?.display_name || ci.commitments.owner?.email}
-                </div>
-                {ci.proof_note && (
-                  <div style={{ fontSize: 12, color: "var(--muted)", marginTop: 4, fontStyle: "italic" }}>
-                    "{ci.proof_note}"
-                  </div>
+            <div key={ci.id} className="list-item" style={{ flexDirection: "column", alignItems: "stretch" }}>
+              <div style={{ display: "flex", alignItems: "flex-start", gap: 12 }}>
+                {ci.photo_url && (
+                  <img
+                    src={ci.photo_url}
+                    alt="Bewijs"
+                    style={{ width: 80, height: 80, borderRadius: "var(--radius)", objectFit: "cover", flexShrink: 0, border: "1px solid var(--border)" }}
+                  />
                 )}
+                <div style={{ flex: 1, minWidth: 0 }}>
+                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: 8 }}>
+                    <div style={{ fontWeight: 600, fontSize: 14 }}>{ci.commitments.title}</div>
+                    <Link href={`/commitments/${ci.commitments.id}`} style={{ flexShrink: 0 }}>
+                      <span className="badge submitted" style={{ display: "inline-flex", alignItems: "center", gap: 2 }}>
+                        detail <ChevronRight size={12} strokeWidth={1.75} />
+                      </span>
+                    </Link>
+                  </div>
+                  <div className="meta" style={{ marginTop: 2 }}>
+                    {relativeDate(ci.due_date)} · {ci.commitments.owner?.display_name || ci.commitments.owner?.email}
+                  </div>
+                  {ci.proof_note && (
+                    <div style={{ fontSize: 12, color: "var(--muted)", marginTop: 4, fontStyle: "italic" }}>
+                      "{ci.proof_note}"
+                    </div>
+                  )}
+                </div>
               </div>
-              <span className="badge submitted" style={{ display: "inline-flex", alignItems: "center", gap: 2 }}>bekijk <ChevronRight size={12} strokeWidth={1.75} /></span>
-            </Link>
+              <ReviewActions checkinId={ci.id} />
+            </div>
           ))}
         </div>
       </div>

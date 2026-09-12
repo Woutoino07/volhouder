@@ -3,6 +3,7 @@ import Nav from "@/components/Nav";
 import { createClient } from "@/lib/supabase/server";
 import SettleButton from "./SettleButton";
 import PayButton from "./PayButton";
+import LedgerCollapsible from "./LedgerCollapsible";
 import { CheckCircle2 } from "lucide-react";
 
 export default async function LedgerPage() {
@@ -24,24 +25,35 @@ export default async function LedgerPage() {
   const open = (entries || []).filter((e) => !e.settled);
   const settled = (entries || []).filter((e) => e.settled);
 
-  const owedByMe = open.filter((e) => e.debtor_id === user.id);
-  const owedToMe = open.filter((e) => e.debtor_id !== user.id);
+  const owedByMeEntries = open.filter((e) => e.debtor_id === user.id);
+  const owedToMeEntries = open.filter((e) => e.debtor_id !== user.id);
+
+  const owedByMeTotal = owedByMeEntries.reduce((s, e) => s + Number(e.amount), 0);
+  const owedToMeTotal = owedToMeEntries.reduce((s, e) => s + Number(e.amount), 0);
+
+  function groupByPerson(entriesList, getPersonKey) {
+    const map = new Map();
+    for (const e of entriesList) {
+      const person = getPersonKey(e);
+      const key = person?.email || person?.display_name || "onbekend";
+      if (!map.has(key)) map.set(key, { person, items: [] });
+      map.get(key).items.push(e);
+    }
+    return [...map.values()];
+  }
+
+  const owedByMeGroups = groupByPerson(owedByMeEntries, (e) => e.creditor);
+  const owedToMeGroups = groupByPerson(owedToMeEntries, (e) => e.debtor);
 
   function renderEntry(e) {
     const iAmDebtor = e.debtor_id === user.id;
-    const otherPerson = iAmDebtor ? e.creditor : e.debtor;
     const canPayOnline = iAmDebtor && stripeConfigured && e.creditor?.stripe_charges_enabled;
     return (
-      <div key={e.id} className="debt-item">
-        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
+      <div key={e.id} className="debt-item" style={{ paddingLeft: 16, borderLeft: "2px solid var(--border)" }}>
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
           <div>
-            <div className="debt-amount" style={{ fontSize: 22, fontWeight: 800, color: "var(--navy)" }}>
+            <div className="debt-amount" style={{ fontSize: 16, fontWeight: 700, color: "var(--navy)" }}>
               € {Number(e.amount).toFixed(2)}
-            </div>
-            <div className="debt-meta" style={{ marginTop: 4 }}>
-              {iAmDebtor
-                ? `aan ${otherPerson?.display_name || otherPerson?.email}`
-                : `van ${otherPerson?.display_name || otherPerson?.email}`}
             </div>
             <div className="debt-meta">
               {e.commitments?.title} · {new Date(e.created_at).toLocaleDateString("nl-BE")}
@@ -57,6 +69,42 @@ export default async function LedgerPage() {
             </div>
           )}
         </div>
+      </div>
+    );
+  }
+
+  function renderGroup(group) {
+    const total = group.items.reduce((s, e) => s + Number(e.amount), 0);
+    const name = group.person?.display_name || group.person?.email || "onbekend";
+    return (
+      <div key={name} className="debt-item">
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: group.items.length > 1 ? 10 : 0 }}>
+          <div style={{ fontWeight: 600, fontSize: 14 }}>{name}</div>
+          <div style={{ fontWeight: 800, fontSize: 18, color: "var(--navy)" }}>€ {total.toFixed(2)}</div>
+        </div>
+        {group.items.length > 1 && (
+          <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+            {group.items.map(renderEntry)}
+          </div>
+        )}
+        {group.items.length === 1 && (() => {
+          const e = group.items[0];
+          const iAmDebtor = e.debtor_id === user.id;
+          const canPayOnline = iAmDebtor && stripeConfigured && e.creditor?.stripe_charges_enabled;
+          return (
+            <div style={{ marginTop: 4 }}>
+              <div className="debt-meta">
+                {e.commitments?.title} · {new Date(e.created_at).toLocaleDateString("nl-BE")}
+              </div>
+              {!e.settled && (
+                <div style={{ display: "flex", gap: 6, marginTop: 8 }}>
+                  {canPayOnline && <PayButton entryId={e.id} />}
+                  <SettleButton entryId={e.id} />
+                </div>
+              )}
+            </div>
+          );
+        })()}
       </div>
     );
   }
@@ -89,31 +137,48 @@ export default async function LedgerPage() {
           </div>
         )}
 
-        {owedByMe.length > 0 && (
+        {open.length > 0 && (
+          <div className="card">
+            <div style={{ display: "flex", gap: 0 }}>
+              <div style={{ flex: 1, textAlign: "center", padding: "12px 0" }}>
+                <div style={{ fontSize: 22, fontWeight: 800, color: "var(--danger)" }}>
+                  {owedByMeTotal > 0 ? `-€${owedByMeTotal.toFixed(2)}` : "€0,00"}
+                </div>
+                <div style={{ fontSize: 12, color: "var(--muted)", marginTop: 2 }}>jij bent verschuldigd</div>
+              </div>
+              <div style={{ width: 1, background: "var(--border)", margin: "8px 0" }} />
+              <div style={{ flex: 1, textAlign: "center", padding: "12px 0" }}>
+                <div style={{ fontSize: 22, fontWeight: 800, color: "var(--success)" }}>
+                  {owedToMeTotal > 0 ? `+€${owedToMeTotal.toFixed(2)}` : "€0,00"}
+                </div>
+                <div style={{ fontSize: 12, color: "var(--muted)", marginTop: 2 }}>aan jou verschuldigd</div>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {owedByMeGroups.length > 0 && (
           <div className="card-section">
             <div className="card-section-header">
               <h2>Ik ben verschuldigd</h2>
             </div>
-            {owedByMe.map(renderEntry)}
+            {owedByMeGroups.map(renderGroup)}
           </div>
         )}
 
-        {owedToMe.length > 0 && (
+        {owedToMeGroups.length > 0 && (
           <div className="card-section">
             <div className="card-section-header">
               <h2>Aan mij verschuldigd</h2>
             </div>
-            {owedToMe.map(renderEntry)}
+            {owedToMeGroups.map(renderGroup)}
           </div>
         )}
 
         {settled.length > 0 && (
-          <div className="card-section">
-            <div className="card-section-header">
-              <h2>Afgehandeld</h2>
-            </div>
-            {settled.map(renderEntry)}
-          </div>
+          <LedgerCollapsible count={settled.length}>
+            {settled.map((e) => renderEntry(e))}
+          </LedgerCollapsible>
         )}
       </div>
     </>

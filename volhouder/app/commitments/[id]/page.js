@@ -181,18 +181,12 @@ export default async function CommitmentDetailPage({ params }) {
         {todayCheckin ? (
           <>
             {isOwner && todayCheckin.status === "pending" && (
-              <>
-                <div style={{ marginBottom: 8 }}>
-                  <span style={{ fontSize: 13, fontWeight: 600, color: "var(--warning)", display: "inline-flex", alignItems: "center", gap: 4 }}>
-                    <Clock size={13} strokeWidth={1.75} /> Deadline: {commitment.deadline_time?.slice(0, 5)}
-                  </span>
-                </div>
-                <CheckinForm
-                  commitmentId={commitment.id}
-                  checkin={todayCheckin}
-                  proofType={commitment.proof_type}
-                />
-              </>
+              <CheckinForm
+                commitmentId={commitment.id}
+                checkin={todayCheckin}
+                proofType={commitment.proof_type}
+                deadlineTime={commitment.deadline_time?.slice(0, 5)}
+              />
             )}
 
             {isOwner && (todayCheckin.status === "missed" || todayCheckin.status === "rejected") && (

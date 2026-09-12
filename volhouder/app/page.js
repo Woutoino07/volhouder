@@ -5,7 +5,7 @@ import { createClient } from "@/lib/supabase/server";
 import { cleanupOldPhotos } from "@/lib/cleanupOldPhotos";
 import { computeStats } from "@/lib/stats";
 import {
-  CheckCircle2, XCircle, Clock, MinusCircle, Flame, Zap, Star, Plus, Target, User
+  CheckCircle2, XCircle, Clock, MinusCircle, Flame, Zap, Star, Plus, Target, User, ChevronRight, AlertCircle
 } from "lucide-react";
 
 const STATUS_LABEL = {
@@ -24,9 +24,9 @@ const FREQ_LABEL = {
 };
 
 function getGreeting() {
-  const hour = new Date().getHours();
-  if (hour < 12) return "Goedemorgen";
-  if (hour < 18) return "Goedemiddag";
+  const h = new Date().getHours();
+  if (h < 12) return "Goedemorgen";
+  if (h < 17) return "Goedemiddag";
   return "Goedenavond";
 }
 
@@ -124,6 +124,8 @@ export default async function DashboardPage() {
   const totalCheckins = rows.reduce((sum, r) => sum + (r.stats.total || 0), 0);
   const overallRate = totalCheckins > 0 ? Math.round((totalSuccess / totalCheckins) * 100) : 0;
 
+  const pendingToday = rows.filter((r) => r.checkin?.status === "pending").length;
+
   return (
     <>
       <Nav pendingReviewCount={pendingReviewCount} />
@@ -137,43 +139,77 @@ export default async function DashboardPage() {
 
         {error && <div className="error-box">{error.message}</div>}
 
+        {owedByMe > 0 && (
+          <Link
+            href="/ledger"
+            style={{
+              display: "flex",
+              alignItems: "center",
+              gap: 8,
+              padding: "10px 14px",
+              borderRadius: "var(--radius)",
+              background: "rgba(var(--danger-rgb, 220,53,69), 0.08)",
+              border: "1px solid rgba(var(--danger-rgb, 220,53,69), 0.25)",
+              color: "var(--danger)",
+              fontSize: 13,
+              fontWeight: 600,
+              marginBottom: 4,
+              textDecoration: "none",
+            }}
+          >
+            <AlertCircle size={14} strokeWidth={1.75} style={{ flexShrink: 0 }} />
+            <span>Je bent €{owedByMe.toFixed(2)} verschuldigd</span>
+            <ChevronRight size={14} strokeWidth={1.75} style={{ marginLeft: "auto", flexShrink: 0 }} />
+          </Link>
+        )}
+
         {rows.length > 0 && (
-          <div className="stats-row">
-            <div className="stat-chip">
-              <div className="value" style={{ display: "flex", alignItems: "center", gap: 4, justifyContent: "center" }}>
-                {totalStreak === 0
-                  ? <Zap size={16} strokeWidth={1.75} style={{ color: "var(--warning)" }} />
-                  : totalStreak > 7
-                  ? <><Flame size={16} strokeWidth={1.75} style={{ color: "var(--warning)" }} /> {totalStreak}</>
-                  : totalStreak}
-              </div>
-              <div className="label">
-                {totalStreak === 0 ? "Start vandaag" : totalStreak > 7 ? "dagen — geweldig!" : "Beste streak"}
-              </div>
-            </div>
-            <div className="stat-chip">
-              <div className="value" style={{ display: "flex", alignItems: "center", gap: 4, justifyContent: "center" }}>
-                {overallRate > 80 ? <><Star size={14} strokeWidth={1.75} style={{ color: "var(--warning)" }} /> {overallRate}%</> : `${overallRate}%`}
-              </div>
-              <div className="label">{overallRate > 80 ? "uitstekend" : "Slaagrate"}</div>
-            </div>
-            {owedByMe > 0 && (
-              <div className="stat-chip">
-                <div className="value" style={{ color: "var(--danger)" }}>€{owedByMe.toFixed(0)}</div>
-                <div className="label">Verschuldigd</div>
+          <>
+            {pendingToday > 0 && (
+              <div style={{ marginBottom: 12 }}>
+                <span className="badge pending" style={{ fontSize: 12, padding: "4px 10px", display: "inline-flex", alignItems: "center", gap: 4 }}>
+                  <Flame size={12} strokeWidth={1.75} />
+                  {pendingToday} te doen vandaag
+                </span>
               </div>
             )}
-            {owedToMe > 0 && (
+            <div className="stats-row">
               <div className="stat-chip">
-                <div className="value" style={{ color: "var(--success)" }}>€{owedToMe.toFixed(0)}</div>
-                <div className="label">Tegoed</div>
+                <div className="value" style={{ display: "flex", alignItems: "center", gap: 4, justifyContent: "center" }}>
+                  {totalStreak === 0
+                    ? <Zap size={16} strokeWidth={1.75} style={{ color: "var(--warning)" }} />
+                    : totalStreak > 7
+                    ? <><Flame size={16} strokeWidth={1.75} style={{ color: "var(--warning)" }} /> {totalStreak}</>
+                    : totalStreak}
+                </div>
+                <div className="label">
+                  {totalStreak === 0 ? "Start vandaag" : totalStreak > 7 ? "dagen — geweldig!" : "Beste streak"}
+                </div>
               </div>
-            )}
-            <div className="stat-chip">
-              <div className="value">{rows.length}</div>
-              <div className="label">Commitments</div>
+              <div className="stat-chip">
+                <div className="value" style={{ display: "flex", alignItems: "center", gap: 4, justifyContent: "center" }}>
+                  {overallRate > 80 ? <><Star size={14} strokeWidth={1.75} style={{ color: "var(--warning)" }} /> {overallRate}%</> : `${overallRate}%`}
+                </div>
+                <div className="label">{overallRate > 80 ? "uitstekend" : "Slaagrate"}</div>
+              </div>
+              {owedByMe > 0 && (
+                <div className="stat-chip">
+                  <div className="value" style={{ color: "var(--danger)" }}>€{owedByMe.toFixed(0)}</div>
+                  <div className="label">Verschuldigd</div>
+                </div>
+              )}
+              {owedToMe > 0 && (
+                <div className="stat-chip">
+                  <div className="value" style={{ color: "var(--success)" }}>€{owedToMe.toFixed(0)}</div>
+                  <div className="label">Tegoed</div>
+                </div>
+              )}
+              <div className="stat-chip">
+                <div className="value">{rows.length}</div>
+                <div className="label">Commitments</div>
+              </div>
             </div>
-          </div>
+          </>
         )}
 
         {rows.length === 0 ? (
@@ -198,6 +234,11 @@ export default async function DashboardPage() {
 
             const rate = stats.total > 0 ? Math.round((stats.successCount / stats.total) * 100) : 0;
             const isPending = checkin?.status === "pending";
+            const noPartner = isOwner && partners.length === 0;
+
+            const pausedDate = !commitment.active && commitment.paused_at
+              ? new Date(commitment.paused_at).toLocaleDateString("nl-BE", { day: "numeric", month: "long" })
+              : null;
 
             return (
               <Link
@@ -212,13 +253,23 @@ export default async function DashboardPage() {
                     )}
                     {commitment.title}
                   </span>
-                  {!commitment.active ? (
-                    <span className="badge paused">gepauzeerd</span>
-                  ) : checkin ? (
-                    <span className={`badge ${checkin.status}`}>{STATUS_LABEL[checkin.status]}</span>
-                  ) : (
-                    <span className="badge paused">niet vandaag</span>
-                  )}
+                  <div style={{ display: "flex", alignItems: "center", gap: 6, flexShrink: 0 }}>
+                    {stats.streak > 0 && commitment.active && (
+                      <span style={{ display: "inline-flex", alignItems: "center", gap: 2, fontSize: 12, color: "var(--warning)", fontWeight: 600 }}>
+                        <Flame size={12} strokeWidth={1.75} />
+                        {stats.streak}
+                      </span>
+                    )}
+                    {!commitment.active ? (
+                      <span className="badge paused">
+                        {pausedDate ? `gepauzeerd op ${pausedDate}` : "gepauzeerd"}
+                      </span>
+                    ) : checkin ? (
+                      <span className={`badge ${checkin.status}`}>{STATUS_LABEL[checkin.status]}</span>
+                    ) : (
+                      <span className="badge paused">niet vandaag</span>
+                    )}
+                  </div>
                 </div>
 
                 <div className="commitment-card-meta">
@@ -231,6 +282,12 @@ export default async function DashboardPage() {
                     <span style={{ fontSize: 12, color: "var(--muted)", display: "inline-flex", alignItems: "center", gap: 3 }}>
                       <User size={11} strokeWidth={1.75} />
                       {partnerLabel}
+                    </span>
+                  )}
+                  {noPartner && (
+                    <span style={{ fontSize: 11, color: "var(--muted)", display: "inline-flex", alignItems: "center", gap: 3, fontStyle: "italic" }}>
+                      <User size={11} strokeWidth={1.75} />
+                      Geen partner — voeg er een toe
                     </span>
                   )}
                 </div>
