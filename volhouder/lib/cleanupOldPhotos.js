@@ -8,7 +8,13 @@
 
 const RETENTION_DAYS = 7;
 
+// Throttle: max 1x per dag per userId (in-memory, reset bij server restart)
+const lastRun = {};
+
 export async function cleanupOldPhotos(supabase, userId) {
+  const today = new Date().toISOString().slice(0, 10);
+  if (lastRun[userId] === today) return;
+  lastRun[userId] = today;
   const cutoff = new Date();
   cutoff.setDate(cutoff.getDate() - RETENTION_DAYS);
   const cutoffDate = cutoff.toISOString().slice(0, 10);

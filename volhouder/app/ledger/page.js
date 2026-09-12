@@ -23,26 +23,30 @@ export default async function LedgerPage() {
   const open = (entries || []).filter((e) => !e.settled);
   const settled = (entries || []).filter((e) => e.settled);
 
+  const owedByMe = open.filter((e) => e.debtor_id === user.id);
+  const owedToMe = open.filter((e) => e.debtor_id !== user.id);
+
   function renderEntry(e) {
     const iAmDebtor = e.debtor_id === user.id;
     const otherPerson = iAmDebtor ? e.creditor : e.debtor;
     const canPayOnline = iAmDebtor && stripeConfigured && e.creditor?.stripe_charges_enabled;
     return (
-      <div key={e.id} style={{ borderBottom: "1px solid var(--border)", padding: "12px 0" }}>
-        <div className="row" style={{ justifyContent: "space-between" }}>
+      <div key={e.id} className="debt-item">
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
           <div>
-            <div>
-              {iAmDebtor ? "Jij bent" : `${otherPerson?.display_name || otherPerson?.email} is`}{" "}
-              € {Number(e.amount).toFixed(2)} verschuldigd
-              {!iAmDebtor && " aan jou"}
+            <div className="debt-amount">€ {Number(e.amount).toFixed(2)}</div>
+            <div className="debt-meta">
+              {iAmDebtor
+                ? `aan ${otherPerson?.display_name || otherPerson?.email}`
+                : `van ${otherPerson?.display_name || otherPerson?.email}`}
             </div>
-            <div className="meta">
+            <div className="debt-meta">
               {e.commitments?.title} · {new Date(e.created_at).toLocaleDateString("nl-BE")}
               {e.settled && e.settled_via === "stripe" && " · betaald via Stripe"}
             </div>
           </div>
           {!e.settled && (
-            <div className="row" style={{ gap: 8 }}>
+            <div style={{ display: "flex", gap: 6, flexShrink: 0 }}>
               {canPayOnline && <PayButton entryId={e.id} />}
               <SettleButton entryId={e.id} />
             </div>
@@ -56,29 +60,52 @@ export default async function LedgerPage() {
     <>
       <Nav />
       <div className="shell">
-        <h1>Schulden</h1>
-        <p className="subtitle">
-          De app rekent zelf niets verplicht af — dit is in de eerste plaats de boekhouding.
-          {stripeConfigured && (
-            <>
-              {" "}
-              Wil je een schuld meteen online kunnen ontvangen in plaats van het onderling te
-              regelen? Stel dat in op je <Link href="/account">accountpagina</Link>.
-            </>
-          )}
-        </p>
+        <div className="page-header">
+          <h1>Schulden</h1>
+          <p className="subtitle" style={{ margin: 0 }}>
+            De app rekent niets verplicht af — dit is de boekhouding.
+            {stripeConfigured && (
+              <>
+                {" "}Stel <Link href="/account">online betalen</Link> in om schulden via Stripe te ontvangen.
+              </>
+            )}
+          </p>
+        </div>
 
         {error && <div className="error-box">{error.message}</div>}
 
-        <div className="card">
-          <h2>Openstaand</h2>
-          {open.length === 0 && <div className="empty">Niets openstaand — goed bezig.</div>}
-          {open.map(renderEntry)}
-        </div>
+        {open.length === 0 && settled.length === 0 && (
+          <div className="card">
+            <div className="empty-state">
+              <div className="empty-icon">◈</div>
+              <p>Geen schulden — goed bezig.</p>
+            </div>
+          </div>
+        )}
+
+        {owedByMe.length > 0 && (
+          <div className="card-section">
+            <div className="card-section-header">
+              <h2>Ik ben verschuldigd</h2>
+            </div>
+            {owedByMe.map(renderEntry)}
+          </div>
+        )}
+
+        {owedToMe.length > 0 && (
+          <div className="card-section">
+            <div className="card-section-header">
+              <h2>Aan mij verschuldigd</h2>
+            </div>
+            {owedToMe.map(renderEntry)}
+          </div>
+        )}
 
         {settled.length > 0 && (
-          <div className="card">
-            <h2>Afgehandeld</h2>
+          <div className="card-section">
+            <div className="card-section-header">
+              <h2>Afgehandeld</h2>
+            </div>
             {settled.map(renderEntry)}
           </div>
         )}

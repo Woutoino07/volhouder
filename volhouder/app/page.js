@@ -3,10 +3,11 @@ import Nav from "@/components/Nav";
 import NotificationSetup from "@/components/NotificationSetup";
 import { createClient } from "@/lib/supabase/server";
 import { cleanupOldPhotos } from "@/lib/cleanupOldPhotos";
+import { computeStats } from "@/lib/stats";
 
 const STATUS_LABEL = {
   pending: "nog te doen",
-  submitted: "ingediend, wacht op partner",
+  submitted: "ingediend",
   approved: "gelukt",
   rejected: "afgekeurd",
   missed: "gemist",
@@ -14,10 +15,25 @@ const STATUS_LABEL = {
 };
 
 const FREQ_LABEL = {
-  daily: "elke dag",
+  daily: "dagelijks",
   weekly: "wekelijks",
   once: "eenmalig",
 };
+
+function getGreeting() {
+  const hour = new Date().getHours();
+  if (hour < 12) return "Goedemorgen";
+  if (hour < 18) return "Goedemiddag";
+  return "Goedenavond";
+}
+
+function formatDate() {
+  return new Date().toLocaleDateString("nl-BE", {
+    weekday: "long",
+    day: "numeric",
+    month: "long",
+  });
+}
 
 export default async function DashboardPage() {
   const supabase = createClient();
@@ -25,16 +41,17 @@ export default async function DashboardPage() {
     data: { user },
   } = await supabase.auth.getUser();
 
-  // Zet verlopen check-ins om naar 'missed'/'approved' en maak eventuele
-  // straffen aan, vóór we iets tonen.
   await supabase.rpc("reconcile_my_checkins");
   await cleanupOldPhotos(supabase, user.id);
 
-  // RLS beperkt dit al tot commitments waar ik eigenaar of partner van ben —
-  // geen aparte .or()-filter nodig.
-  // Bewust GEEN filter op active=true: een gepauzeerde commitment blijft
-  // zichtbaar (met een duidelijk label) zodat een partner ook merkt dát en
-  // wanneer die gepauzeerd is, in plaats van dat ze stilletjes verdwijnt.
+  const { data: profile } = await supabase
+    .from("profiles")
+    .select("display_name, email")
+    .eq("id", user.id)
+    .single();
+
+  const displayName = profile?.display_name || user.email?.split("@")[0] || "jij";
+
   const { data: commitments, error } = await supabase
     .from("commitments")
     .select("*, owner:owner_id(display_name,email)")
@@ -42,7 +59,7 @@ export default async function DashboardPage() {
 
   const rows = [];
   for (const c of commitments || []) {
-    const [{ data: checkin }, { data: partnerRows }] = await Promise.all([
+    const [{ data: checkin }, { data: partnerRows }, { data: history }] = await Promise.all([
       c.active
         ? supabase.rpc("ensure_checkin_today", { p_commitment_id: c.id })
         : Promise.resolve({ data: null }),
@@ -50,8 +67,15 @@ export default async function DashboardPage() {
         .from("commitment_partners")
         .select("profile_id, profile:profile_id(display_name,email)")
         .eq("commitment_id", c.id),
+      supabase
+        .from("check_ins")
+        .select("status")
+        .eq("commitment_id", c.id)
+        .order("due_date", { ascending: false })
+        .limit(30),
     ]);
-    rows.push({ commitment: c, checkin, partners: partnerRows || [] });
+    const stats = computeStats(history || []);
+    rows.push({ commitment: c, checkin, partners: partnerRows || [], stats });
   }
 
   const { data: myPartnerCommitments } = await supabase
@@ -83,76 +107,128 @@ export default async function DashboardPage() {
     .filter((d) => d.debtor_id !== user.id)
     .reduce((sum, d) => sum + Number(d.amount), 0);
 
+  const totalStreak = rows.reduce((max, r) => Math.max(max, r.stats.streak || 0), 0);
+  const totalSuccess = rows.reduce((sum, r) => sum + (r.stats.successCount || 0), 0);
+  const totalCheckins = rows.reduce((sum, r) => sum + (r.stats.total || 0), 0);
+  const overallRate = totalCheckins > 0 ? Math.round((totalSuccess / totalCheckins) * 100) : 0;
+
   return (
     <>
-      <Nav />
+      <Nav pendingReviewCount={pendingReviewCount} />
       <div className="shell">
-        <h1>Mijn commitments</h1>
-        <p className="subtitle">Ingelogd als {user.email}</p>
-
-        {error && <div className="error-box">{error.message}</div>}
+        <div className="page-header">
+          <p className="greeting">{getGreeting()}, {displayName}</p>
+          <p className="date-label" style={{ textTransform: "capitalize" }}>{formatDate()}</p>
+        </div>
 
         <NotificationSetup />
 
-        <div className="row" style={{ marginBottom: 20 }}>
-          <Link className="btn" href="/commitments/new">
-            + Nieuwe commitment
-          </Link>
-          {pendingReviewCount > 0 && (
-            <Link className="btn secondary" href="/review">
-              {pendingReviewCount} te beoordelen
-            </Link>
-          )}
-        </div>
+        {error && <div className="error-box">{error.message}</div>}
 
-        {(owedByMe > 0 || owedToMe > 0) && (
-          <div className="card">
-            <h2>Openstaande schulden</h2>
-            {owedByMe > 0 && <p>Jij bent momenteel € {owedByMe.toFixed(2)} verschuldigd.</p>}
-            {owedToMe > 0 && <p>Er staat € {owedToMe.toFixed(2)} open dat aan jou verschuldigd is.</p>}
-            <Link href="/ledger">Bekijk details →</Link>
+        {rows.length > 0 && (
+          <div className="stats-row">
+            <div className="stat-chip">
+              <div className="value">{totalStreak}</div>
+              <div className="label">Beste streak</div>
+            </div>
+            <div className="stat-chip">
+              <div className="value">{overallRate}%</div>
+              <div className="label">Slaagrate</div>
+            </div>
+            {owedByMe > 0 && (
+              <div className="stat-chip">
+                <div className="value" style={{ color: "var(--danger)" }}>€{owedByMe.toFixed(0)}</div>
+                <div className="label">Verschuldigd</div>
+              </div>
+            )}
+            {owedToMe > 0 && (
+              <div className="stat-chip">
+                <div className="value" style={{ color: "var(--success)" }}>€{owedToMe.toFixed(0)}</div>
+                <div className="label">Tegoed</div>
+              </div>
+            )}
+            <div className="stat-chip">
+              <div className="value">{rows.length}</div>
+              <div className="label">Commitments</div>
+            </div>
           </div>
         )}
 
-        <div className="card">
-          {rows.length === 0 && (
-            <div className="empty">
-              Je hebt nog geen commitments. Maak er hierboven één aan.
+        {rows.length === 0 ? (
+          <div className="card">
+            <div className="empty-state">
+              <div className="empty-icon">🎯</div>
+              <p>Geen commitments gevonden.<br />Maak er een aan met de + knop.</p>
             </div>
-          )}
-          {rows.map(({ commitment, checkin, partners }) => {
+          </div>
+        ) : (
+          rows.map(({ commitment, checkin, partners, stats }) => {
             const isOwner = commitment.owner_id === user.id;
-            const otherLabel = isOwner
+            const partnerLabel = isOwner
               ? partners.length > 0
-                ? `met ${partners.map((p) => p.profile?.display_name || p.profile?.email).join(", ")}`
-                : "nog geen partner uitgenodigd"
-              : `eigenaar: ${commitment.owner?.display_name || commitment.owner?.email}`;
+                ? partners.map((p) => p.profile?.display_name || p.profile?.email).join(", ")
+                : null
+              : (commitment.owner?.display_name || commitment.owner?.email);
+
+            const rate = stats.total > 0 ? Math.round((stats.successCount / stats.total) * 100) : 0;
+            const isPending = checkin?.status === "pending";
+
             return (
               <Link
                 key={commitment.id}
                 href={`/commitments/${commitment.id}`}
-                className="commitment-item"
+                className="commitment-card"
               >
-                <div>
-                  <div>{commitment.title}</div>
-                  <div className="meta">
-                    {FREQ_LABEL[commitment.frequency]} · deadline {commitment.deadline_time?.slice(0, 5)} · {otherLabel}
-                  </div>
+                <div className="commitment-card-header">
+                  <span className="commitment-card-title">{commitment.title}</span>
+                  {!commitment.active ? (
+                    <span className="badge paused">gepauzeerd</span>
+                  ) : checkin ? (
+                    <span className={`badge ${checkin.status}`}>{STATUS_LABEL[checkin.status]}</span>
+                  ) : (
+                    <span className="badge paused">niet vandaag</span>
+                  )}
                 </div>
-                {!commitment.active ? (
-                  <span className="badge missed" style={{ background: "var(--border)", color: "var(--muted)" }}>
-                    gepauzeerd
+
+                <div className="commitment-card-meta">
+                  <span className="badge freq">{FREQ_LABEL[commitment.frequency]}</span>
+                  <span style={{ fontSize: 12, color: "var(--muted)" }}>
+                    ⏰ {commitment.deadline_time?.slice(0, 5)}
                   </span>
-                ) : checkin ? (
-                  <span className={`badge ${checkin.status}`}>{STATUS_LABEL[checkin.status]}</span>
-                ) : (
-                  <span className="meta">niet vandaag</span>
+                  {partnerLabel && (
+                    <span style={{ fontSize: 12, color: "var(--muted)" }}>
+                      👤 {partnerLabel}
+                    </span>
+                  )}
+                </div>
+
+                {stats.total > 0 && (
+                  <div>
+                    <div style={{ display: "flex", justifyContent: "space-between", fontSize: 11, color: "var(--muted)", marginBottom: 4 }}>
+                      <span>{stats.streak} op rij</span>
+                      <span>{rate}%</span>
+                    </div>
+                    <div className="streak-bar">
+                      <div
+                        className={`streak-bar-fill${checkin?.status === "approved" ? " success" : ""}`}
+                        style={{ width: `${rate}%` }}
+                      />
+                    </div>
+                  </div>
+                )}
+
+                {isPending && commitment.active && (
+                  <div style={{ marginTop: 12 }}>
+                    <div className="btn-checkin">Check in ✓</div>
+                  </div>
                 )}
               </Link>
             );
-          })}
-        </div>
+          })
+        )}
       </div>
+
+      <Link href="/commitments/new" className="fab" title="Nieuwe commitment">+</Link>
     </>
   );
 }

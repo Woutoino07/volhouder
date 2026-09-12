@@ -40,39 +40,46 @@ export default async function ReviewPage() {
     <>
       <Nav />
       <div className="shell">
-        <h1>Te beoordelen</h1>
-        <p className="subtitle">
-          Ingediende bewijzen en betwistingen van commitments waar jij accountability-partner voor bent.
-        </p>
+        <div className="page-header">
+          <h1>Beoordelen</h1>
+          <p className="subtitle" style={{ margin: 0 }}>Ingediende bewijzen van jouw partners.</p>
+        </div>
 
         {disputed.length > 0 && (
-          <div className="card">
-            <h2>Betwistingen</h2>
+          <div className="card-section">
+            <div className="card-section-header">
+              <h2>Betwistingen</h2>
+            </div>
             {disputed.map((ci) => (
-              <Link key={ci.id} href={`/commitments/${ci.commitments.id}`} className="commitment-item">
+              <Link key={ci.id} href={`/commitments/${ci.commitments.id}`} className="list-item">
                 <div>
-                  <div>{ci.commitments.title}</div>
+                  <div style={{ fontWeight: 600, fontSize: 14 }}>{ci.commitments.title}</div>
                   <div className="meta">
-                    {ci.due_date} · van {ci.commitments.owner?.display_name || ci.commitments.owner?.email}
+                    {ci.due_date} · {ci.commitments.owner?.display_name || ci.commitments.owner?.email}
                   </div>
                 </div>
-                <span className="badge disputed">beslecht</span>
+                <span className="badge disputed">beslechten</span>
               </Link>
             ))}
           </div>
         )}
 
-        <div className="card">
-          <h2>Ingediend bewijs</h2>
+        <div className="card-section">
+          <div className="card-section-header">
+            <h2>Ingediend bewijs</h2>
+          </div>
           {pending.length === 0 && (
-            <div className="empty">Niets om te beoordelen op dit moment.</div>
+            <div className="empty-state">
+              <div className="empty-icon">✓</div>
+              <p>Niets om te beoordelen.</p>
+            </div>
           )}
           {pending.map((ci) => (
-            <Link key={ci.id} href={`/commitments/${ci.commitments.id}`} className="commitment-item">
+            <Link key={ci.id} href={`/commitments/${ci.commitments.id}`} className="list-item">
               <div>
-                <div>{ci.commitments.title}</div>
+                <div style={{ fontWeight: 600, fontSize: 14 }}>{ci.commitments.title}</div>
                 <div className="meta">
-                  {ci.due_date} · van {ci.commitments.owner?.display_name || ci.commitments.owner?.email}
+                  {ci.due_date} · {ci.commitments.owner?.display_name || ci.commitments.owner?.email}
                 </div>
               </div>
               <span className="badge submitted">bekijk</span>

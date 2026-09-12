@@ -4,6 +4,7 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import Nav from "@/components/Nav";
+import Link from "next/link";
 
 const DAYS = [
   { value: 1, label: "ma" },
@@ -49,9 +50,6 @@ export default function NewCommitmentPage() {
       data: { user },
     } = await supabase.auth.getUser();
 
-    // We genereren het ID hier zelf, zodat we na het aanmaken niets hoeven
-    // terug te vragen aan Supabase (dat teruggevraagd-in-dezelfde-aanvraag
-    // patroon botst met de RLS-policy op deze tabel).
     const commitmentId = crypto.randomUUID();
 
     const payload = {
@@ -116,18 +114,23 @@ export default function NewCommitmentPage() {
       <>
         <Nav />
         <div className="shell">
-          <h1>Commitment aangemaakt</h1>
+          <div className="detail-header">
+            <Link href="/" className="back-btn">←</Link>
+            <h1>Uitnodigingen</h1>
+          </div>
           <div className="card">
-            <p>Stuur elke link zelf door naar de bijhorende persoon (via WhatsApp, mail, wat je wil):</p>
+            <p style={{ margin: "0 0 14px", fontSize: 14, color: "var(--muted)" }}>
+              Stuur elke link door naar de bijbehorende persoon (WhatsApp, mail, etc.):
+            </p>
             {inviteLinks.map((i) => (
               <div className="field" key={i.link}>
                 <label>{i.email}</label>
                 <input type="text" readOnly value={i.link} onFocus={(e) => e.target.select()} />
               </div>
             ))}
-            <p className="hint">
+            <p style={{ fontSize: 12, color: "var(--muted)", margin: "12px 0 16px" }}>
               Zodra iemand inlogt met dat e-mailadres en op zijn link klikt, wordt hij/zij je
-              accountability-partner voor deze commitment. Een link verloopt na 7 dagen.
+              accountability-partner. Een link verloopt na 7 dagen.
             </p>
             <button onClick={() => router.push("/")}>Naar mijn commitments</button>
           </div>
@@ -140,133 +143,145 @@ export default function NewCommitmentPage() {
     <>
       <Nav />
       <div className="shell">
-        <h1>Nieuwe commitment</h1>
-        <p className="subtitle">Wees zo specifiek mogelijk — hoe concreter, hoe minder ruimte om te foezelen.</p>
+        <div className="detail-header">
+          <Link href="/" className="back-btn">←</Link>
+          <h1>Nieuwe commitment</h1>
+        </div>
+        <p className="subtitle">Wees specifiek — hoe concreter, hoe minder ruimte om te foezelen.</p>
 
-        <form className="card" onSubmit={handleSubmit}>
+        <form onSubmit={handleSubmit}>
           {error && <div className="error-box">{error}</div>}
 
-          <div className="field">
-            <label>Titel</label>
-            <input
-              type="text"
-              required
-              value={title}
-              onChange={(e) => setTitle(e.target.value)}
-              placeholder="Om 6:40 uit bed"
-            />
-          </div>
-
-          <div className="field">
-            <label>Omschrijving (optioneel)</label>
-            <textarea
-              value={description}
-              onChange={(e) => setDescription(e.target.value)}
-              placeholder="Foto van mezelf rechtstaand in de keuken, binnen 5 minuten na het alarm."
-            />
-          </div>
-
-          <div className="field">
-            <label>Frequentie</label>
-            <select value={frequency} onChange={(e) => setFrequency(e.target.value)}>
-              <option value="daily">Elke dag</option>
-              <option value="weekly">Bepaalde dagen van de week</option>
-              <option value="once">Eenmalig</option>
-            </select>
-          </div>
-
-          {frequency === "weekly" && (
+          <div className="card">
             <div className="field">
-              <label>Welke dagen?</label>
-              <div className="days-grid">
-                {DAYS.map((d) => (
-                  <button
-                    type="button"
-                    key={d.value}
-                    className={`day-toggle ${daysOfWeek.includes(d.value) ? "active" : ""}`}
-                    onClick={() => toggleDay(d.value)}
-                  >
-                    {d.label}
-                  </button>
-                ))}
+              <label>Titel</label>
+              <input
+                type="text"
+                required
+                value={title}
+                onChange={(e) => setTitle(e.target.value)}
+                placeholder="Om 6:40 uit bed"
+              />
+            </div>
+
+            <div className="field" style={{ marginBottom: 0 }}>
+              <label>Omschrijving <span style={{ fontWeight: 400, color: "var(--muted)" }}>(optioneel)</span></label>
+              <textarea
+                value={description}
+                onChange={(e) => setDescription(e.target.value)}
+                placeholder="Foto van mezelf rechtstaand in de keuken, binnen 5 minuten na het alarm."
+              />
+            </div>
+          </div>
+
+          <div className="card">
+            <div className="field">
+              <label>Frequentie</label>
+              <select value={frequency} onChange={(e) => setFrequency(e.target.value)}>
+                <option value="daily">Elke dag</option>
+                <option value="weekly">Bepaalde dagen van de week</option>
+                <option value="once">Eenmalig</option>
+              </select>
+            </div>
+
+            {frequency === "weekly" && (
+              <div className="field">
+                <label>Welke dagen?</label>
+                <div className="days-grid">
+                  {DAYS.map((d) => (
+                    <button
+                      type="button"
+                      key={d.value}
+                      className={`day-toggle ${daysOfWeek.includes(d.value) ? "active" : ""}`}
+                      onClick={() => toggleDay(d.value)}
+                    >
+                      {d.label}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {frequency === "once" && (
+              <div className="field">
+                <label>Datum</label>
+                <input
+                  type="date"
+                  required
+                  value={onceDate}
+                  onChange={(e) => setOnceDate(e.target.value)}
+                />
+              </div>
+            )}
+
+            <div className="field" style={{ marginBottom: 0 }}>
+              <label>Deadline (Europe/Brussels)</label>
+              <input
+                type="time"
+                required
+                value={deadlineTime}
+                onChange={(e) => setDeadlineTime(e.target.value)}
+              />
+            </div>
+          </div>
+
+          <div className="card">
+            <div className="field">
+              <label>Bewijs</label>
+              <select value={proofType} onChange={(e) => setProofType(e.target.value)}>
+                <option value="photo">Foto verplicht</option>
+                <option value="checkbox">Simpel afvinken</option>
+                <option value="both">Foto of afvinken</option>
+              </select>
+            </div>
+
+            <div className="field" style={{ marginBottom: 0 }}>
+              <label>Geldinzet bij missen (€)</label>
+              <input
+                type="number"
+                min="0"
+                step="0.5"
+                value={moneyStake}
+                onChange={(e) => setMoneyStake(e.target.value)}
+              />
+              <div className="hint">
+                Wordt bijgehouden als schuld aan je partner. De app int niets automatisch.
               </div>
             </div>
-          )}
+          </div>
 
-          {frequency === "once" && (
+          <div className="card">
             <div className="field">
-              <label>Datum</label>
-              <input
-                type="date"
-                required
-                value={onceDate}
-                onChange={(e) => setOnceDate(e.target.value)}
-              />
+              <div className="checkbox-row">
+                <input
+                  type="checkbox"
+                  id="social"
+                  checked={socialConsequence}
+                  onChange={(e) => setSocialConsequence(e.target.checked)}
+                />
+                <label htmlFor="social" style={{ marginBottom: 0, fontWeight: 400, fontSize: 14 }}>
+                  Toon missers op het gedeelde overzicht ("wall of shame")
+                </label>
+              </div>
             </div>
-          )}
 
-          <div className="field">
-            <label>Deadline (jouw lokale tijd, Europe/Brussels)</label>
-            <input
-              type="time"
-              required
-              value={deadlineTime}
-              onChange={(e) => setDeadlineTime(e.target.value)}
-            />
-          </div>
-
-          <div className="field">
-            <label>Hoe lever je bewijs?</label>
-            <select value={proofType} onChange={(e) => setProofType(e.target.value)}>
-              <option value="photo">Foto verplicht</option>
-              <option value="checkbox">Simpel afvinken</option>
-              <option value="both">Beide (foto of afvinken)</option>
-            </select>
-          </div>
-
-          <div className="field">
-            <label>Geldinzet bij missen (€)</label>
-            <input
-              type="number"
-              min="0"
-              step="0.5"
-              value={moneyStake}
-              onChange={(e) => setMoneyStake(e.target.value)}
-            />
-            <div className="hint">
-              Wordt bijgehouden als schuld aan je partner. De app int niets automatisch — jullie
-              regelen de betaling zelf.
-            </div>
-          </div>
-
-          <div className="field">
-            <div className="checkbox-row">
-              <input
-                type="checkbox"
-                id="social"
-                checked={socialConsequence}
-                onChange={(e) => setSocialConsequence(e.target.checked)}
-              />
-              <label htmlFor="social" style={{ marginBottom: 0 }}>
-                Toon missers ook op het gedeelde overzicht ("wall of shame")
+            <div className="field" style={{ marginBottom: 0 }}>
+              <label>
+                Partner(s) uitnodigen{" "}
+                <span style={{ fontWeight: 400, color: "var(--muted)" }}>(optioneel, kan later ook)</span>
               </label>
+              <textarea
+                value={partnerEmails}
+                onChange={(e) => setPartnerEmails(e.target.value)}
+                placeholder={"naam@voorbeeld.com\nnog-iemand@voorbeeld.com"}
+              />
+              <div className="hint">
+                Eén e-mailadres per lijn of gescheiden door een komma.
+              </div>
             </div>
           </div>
 
-          <div className="field">
-            <label>Accountability-partner(s) uitnodigen (optioneel, kan later ook)</label>
-            <textarea
-              value={partnerEmails}
-              onChange={(e) => setPartnerEmails(e.target.value)}
-              placeholder={"naam@voorbeeld.com\nnog-iemand@voorbeeld.com"}
-            />
-            <div className="hint">
-              Eén e-mailadres per lijn (of gescheiden door een komma). Meerdere partners
-              verkleinen het risico dat er nooit iemand afkeurt.
-            </div>
-          </div>
-
-          <button type="submit" disabled={loading}>
+          <button type="submit" disabled={loading} className="btn-full" style={{ width: "100%", padding: "14px", fontSize: 15, borderRadius: "var(--radius)", marginBottom: 24 }}>
             {loading ? "Bezig..." : "Commitment aanmaken"}
           </button>
         </form>

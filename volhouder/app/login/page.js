@@ -46,13 +46,14 @@ function LoginForm() {
   }
 
   return (
-    <div className="shell" style={{ paddingTop: 60 }}>
-      <h1>Volhouder</h1>
+    <div className="auth-shell">
+      <span className="auth-logo">Volhouder</span>
+      <h1 style={{ marginBottom: 6 }}>Inloggen</h1>
       <p className="subtitle">
         Commitments die je écht nakomt, met een partner die meebeoordeelt en een straf die telt.
       </p>
 
-      <div className="card" style={{ maxWidth: 420 }}>
+      <div className="card">
         <form onSubmit={handleSubmit}>
           {error && <div className="error-box">{error}</div>}
           <div className="field">
@@ -66,7 +67,7 @@ function LoginForm() {
               placeholder="jij@voorbeeld.com"
             />
           </div>
-          <div className="field">
+          <div className="field" style={{ marginBottom: 16 }}>
             <label htmlFor="password">Wachtwoord</label>
             <input
               id="password"
@@ -76,23 +77,18 @@ function LoginForm() {
               onChange={(e) => setPassword(e.target.value)}
             />
           </div>
-          <div className="row" style={{ justifyContent: "space-between" }}>
-            <button type="submit" disabled={loading}>
-              {loading ? "Bezig..." : "Inloggen"}
-            </button>
-            <Link href="/forgot-password" style={{ fontSize: 13 }}>
-              Wachtwoord vergeten?
-            </Link>
-          </div>
+          <button type="submit" disabled={loading} style={{ width: "100%", padding: "13px", fontSize: 15 }}>
+            {loading ? "Bezig..." : "Inloggen"}
+          </button>
         </form>
       </div>
 
-      <p className="subtitle" style={{ marginTop: 16 }}>
-        Nog geen account?{" "}
+      <p style={{ textAlign: "center", fontSize: 13, color: "var(--muted)", marginTop: 16 }}>
+        <Link href="/forgot-password">Wachtwoord vergeten?</Link>
+        {" · "}
         <Link href={`/signup?next=${encodeURIComponent(searchParams.get("next") || "/")}`}>
-          Registreer hier
+          Registreer
         </Link>
-        .
       </p>
     </div>
   );

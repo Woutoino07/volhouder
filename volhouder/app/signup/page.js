@@ -68,9 +68,10 @@ function SignupForm() {
 
   if (done === "confirm-email") {
     return (
-      <div className="shell" style={{ paddingTop: 60 }}>
+      <div className="auth-shell">
+        <span className="auth-logo">Volhouder</span>
         <h1>Bijna klaar</h1>
-        <div className="card notice-box">
+        <div className="notice-box" style={{ marginTop: 16 }}>
           We stuurden een bevestigingslink naar <strong>{email}</strong>. Klik erop om je account
           te activeren en in te loggen.
         </div>
@@ -79,9 +80,11 @@ function SignupForm() {
   }
 
   return (
-    <div className="shell" style={{ paddingTop: 60 }}>
-      <h1>Account aanmaken</h1>
-      <div className="card" style={{ maxWidth: 420 }}>
+    <div className="auth-shell">
+      <span className="auth-logo">Volhouder</span>
+      <h1 style={{ marginBottom: 6 }}>Account aanmaken</h1>
+      <p className="subtitle">Gratis, geen verplichtingen — alleen jouw commitments.</p>
+      <div className="card">
         <form onSubmit={handleSubmit}>
           {error && <div className="error-box">{error}</div>}
           <div className="field">
@@ -107,7 +110,7 @@ function SignupForm() {
             />
             <div className="hint">Minstens 8 tekens.</div>
           </div>
-          <div className="field">
+          <div className="field" style={{ marginBottom: 16 }}>
             <label htmlFor="confirmPassword">Herhaal wachtwoord</label>
             <input
               id="confirmPassword"
@@ -117,17 +120,16 @@ function SignupForm() {
               onChange={(e) => setConfirmPassword(e.target.value)}
             />
           </div>
-          <button type="submit" disabled={loading}>
+          <button type="submit" disabled={loading} style={{ width: "100%", padding: "13px", fontSize: 15 }}>
             {loading ? "Bezig..." : "Account aanmaken"}
           </button>
         </form>
       </div>
-      <p className="subtitle" style={{ marginTop: 16 }}>
-        Heb je al een account?{" "}
+      <p style={{ textAlign: "center", fontSize: 13, color: "var(--muted)", marginTop: 16 }}>
+        Al een account?{" "}
         <Link href={`/login?next=${encodeURIComponent(searchParams.get("next") || "/")}`}>
           Log hier in
         </Link>
-        .
       </p>
     </div>
   );

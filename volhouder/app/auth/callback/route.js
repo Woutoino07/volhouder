@@ -8,10 +8,13 @@ export async function GET(request) {
   const code = searchParams.get("code");
   const next = searchParams.get("next") || "/";
 
+  // Voorkom open redirect: alleen relatieve paden zijn toegestaan.
+  const safePath = next.startsWith("/") && !next.startsWith("//") ? next : "/";
+
   if (code) {
     const supabase = createClient();
     await supabase.auth.exchangeCodeForSession(code);
   }
 
-  return NextResponse.redirect(`${origin}${next}`);
+  return NextResponse.redirect(`${origin}${safePath}`);
 }
