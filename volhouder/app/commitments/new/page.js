@@ -49,7 +49,13 @@ export default function NewCommitmentPage() {
       data: { user },
     } = await supabase.auth.getUser();
 
+    // We genereren het ID hier zelf, zodat we na het aanmaken niets hoeven
+    // terug te vragen aan Supabase (dat teruggevraagd-in-dezelfde-aanvraag
+    // patroon botst met de RLS-policy op deze tabel).
+    const commitmentId = crypto.randomUUID();
+
     const payload = {
+      id: commitmentId,
       owner_id: user.id,
       title,
       description: description || null,
@@ -62,11 +68,7 @@ export default function NewCommitmentPage() {
       social_consequence: socialConsequence,
     };
 
-    const { data: commitment, error: insertError } = await supabase
-      .from("commitments")
-      .insert(payload)
-      .select()
-      .single();
+    const { error: insertError } = await supabase.from("commitments").insert(payload);
 
     if (insertError) {
       setError(insertError.message);
@@ -80,11 +82,13 @@ export default function NewCommitmentPage() {
       .filter(Boolean);
 
     if (emails.length > 0) {
-      const rows = emails.map((email) => ({ commitment_id: commitment.id, email }));
-      const { data: invites, error: inviteError } = await supabase
-        .from("invites")
-        .insert(rows)
-        .select();
+      const rows = emails.map((email) => ({
+        id: crypto.randomUUID(),
+        commitment_id: commitmentId,
+        email,
+        token: crypto.randomUUID(),
+      }));
+      const { error: inviteError } = await supabase.from("invites").insert(rows);
 
       if (inviteError) {
         setError(
@@ -97,14 +101,14 @@ export default function NewCommitmentPage() {
 
       const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || window.location.origin;
       setInviteLinks(
-        invites.map((invite) => ({ email: invite.email, link: `${siteUrl}/invite/${invite.token}` }))
+        rows.map((row) => ({ email: row.email, link: `${siteUrl}/invite/${row.token}` }))
       );
       setLoading(false);
       return;
     }
 
     setLoading(false);
-    router.push(`/commitments/${commitment.id}`);
+    router.push(`/commitments/${commitmentId}`);
   }
 
   if (inviteLinks) {
