@@ -17,17 +17,21 @@ export default async function AccountPage() {
 
   const stripeConfigured = !!process.env.STRIPE_SECRET_KEY;
 
+  const displayName = profile?.display_name || profile?.email || user.email || "";
+  const initial = displayName.charAt(0).toUpperCase();
+
   return (
     <>
       <Nav />
       <div className="shell">
         <div className="page-header">
           <h1>Account</h1>
-          <p className="subtitle" style={{ margin: 0 }}>{profile?.display_name || profile?.email}</p>
+          <p className="subtitle" style={{ margin: 0 }}>{displayName}</p>
         </div>
 
         <div className="card">
           <h2>Profiel</h2>
+          <div className="avatar">{initial}</div>
           <div style={{ fontSize: 14, color: "var(--muted)" }}>
             <div>{profile?.display_name || "—"}</div>
             <div>{profile?.email || user.email}</div>
@@ -46,7 +50,7 @@ export default async function AccountPage() {
             ) : (
               <>
                 <p style={{ fontSize: 14, color: "var(--muted)", margin: "0 0 12px" }}>
-                  Koppel je Stripe-account zodat partners schulden direct online kunnen betalen.
+                  Koppel je bankrekening om schulden direct online te ontvangen via Stripe.
                   Optioneel — zonder deze koppeling werkt de schuldenlijst gewoon.
                 </p>
                 <ConnectStripeButton

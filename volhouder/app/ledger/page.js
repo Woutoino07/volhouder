@@ -34,16 +34,20 @@ export default async function LedgerPage() {
       <div key={e.id} className="debt-item">
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
           <div>
-            <div className="debt-amount">€ {Number(e.amount).toFixed(2)}</div>
-            <div className="debt-meta">
+            <div className="debt-amount" style={{ fontSize: 22, fontWeight: 800, color: "var(--navy)" }}>
+              € {Number(e.amount).toFixed(2)}
+            </div>
+            <div className="debt-meta" style={{ marginTop: 4 }}>
               {iAmDebtor
                 ? `aan ${otherPerson?.display_name || otherPerson?.email}`
                 : `van ${otherPerson?.display_name || otherPerson?.email}`}
             </div>
             <div className="debt-meta">
               {e.commitments?.title} · {new Date(e.created_at).toLocaleDateString("nl-BE")}
-              {e.settled && e.settled_via === "stripe" && " · betaald via Stripe"}
             </div>
+            {e.settled && e.settled_via === "stripe" && (
+              <div className="debt-meta">Betaald via: Stripe</div>
+            )}
           </div>
           {!e.settled && (
             <div style={{ display: "flex", gap: 6, flexShrink: 0 }}>
@@ -77,8 +81,9 @@ export default async function LedgerPage() {
         {open.length === 0 && settled.length === 0 && (
           <div className="card">
             <div className="empty-state">
-              <div className="empty-icon">◈</div>
-              <p>Geen schulden — goed bezig.</p>
+              <div className="empty-state-icon">💚</div>
+              <h3>Geen openstaande schulden</h3>
+              <p>Je staat er goed voor. Blijf je commitments nakomen!</p>
             </div>
           </div>
         )}

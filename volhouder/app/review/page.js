@@ -2,6 +2,18 @@ import Link from "next/link";
 import Nav from "@/components/Nav";
 import { createClient } from "@/lib/supabase/server";
 
+function relativeDate(dateStr) {
+  if (!dateStr) return dateStr;
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  const d = new Date(dateStr);
+  d.setHours(0, 0, 0, 0);
+  const diff = Math.round((today - d) / (1000 * 60 * 60 * 24));
+  if (diff === 0) return "Vandaag";
+  if (diff === 1) return "Gisteren";
+  return d.toLocaleDateString("nl-BE", { day: "numeric", month: "short" });
+}
+
 export default async function ReviewPage() {
   const supabase = createClient();
   const {
@@ -55,7 +67,7 @@ export default async function ReviewPage() {
                 <div>
                   <div style={{ fontWeight: 600, fontSize: 14 }}>{ci.commitments.title}</div>
                   <div className="meta">
-                    {ci.due_date} · {ci.commitments.owner?.display_name || ci.commitments.owner?.email}
+                    {relativeDate(ci.due_date)} · {ci.commitments.owner?.display_name || ci.commitments.owner?.email}
                   </div>
                 </div>
                 <span className="badge disputed">beslechten</span>
@@ -70,17 +82,23 @@ export default async function ReviewPage() {
           </div>
           {pending.length === 0 && (
             <div className="empty-state">
-              <div className="empty-icon">✓</div>
-              <p>Niets om te beoordelen.</p>
+              <div className="empty-state-icon">✨</div>
+              <h3>Alles bijgewerkt</h3>
+              <p>Er is niets om te beoordelen op dit moment. Je partners stellen je op de hoogte wanneer ze een check-in indienen.</p>
             </div>
           )}
           {pending.map((ci) => (
             <Link key={ci.id} href={`/commitments/${ci.commitments.id}`} className="list-item">
-              <div>
+              <div style={{ flex: 1, marginRight: 12 }}>
                 <div style={{ fontWeight: 600, fontSize: 14 }}>{ci.commitments.title}</div>
                 <div className="meta">
-                  {ci.due_date} · {ci.commitments.owner?.display_name || ci.commitments.owner?.email}
+                  {relativeDate(ci.due_date)} · {ci.commitments.owner?.display_name || ci.commitments.owner?.email}
                 </div>
+                {ci.proof_note && (
+                  <div style={{ fontSize: 12, color: "var(--muted)", marginTop: 4, fontStyle: "italic" }}>
+                    "{ci.proof_note}"
+                  </div>
+                )}
               </div>
               <span className="badge submitted">bekijk</span>
             </Link>

@@ -71,12 +71,10 @@ export default function CameraCapture({ onCapture, capturedPreviewUrl, onRetake 
 
   if (capturedPreviewUrl) {
     return (
-      <div>
-        <img className="proof-photo" src={capturedPreviewUrl} alt="Genomen foto" />
+      <div className="photo-preview">
+        <img src={capturedPreviewUrl} alt="Genomen foto" />
         <button
           type="button"
-          className="secondary"
-          style={{ marginTop: 8 }}
           onClick={() => {
             onRetake();
             setFallback(false);
@@ -92,7 +90,16 @@ export default function CameraCapture({ onCapture, capturedPreviewUrl, onRetake 
     return (
       <div>
         {error && <div className="hint">{error}</div>}
-        <input type="file" accept="image/*" capture="environment" onChange={handleFallbackFile} />
+        <label className="camera-btn">
+          <input
+            type="file"
+            accept="image/*"
+            capture="environment"
+            onChange={handleFallbackFile}
+            style={{ display: "none" }}
+          />
+          📷 Maak foto
+        </label>
       </div>
     );
   }
@@ -107,8 +114,8 @@ export default function CameraCapture({ onCapture, capturedPreviewUrl, onRetake 
           muted
           style={{ width: "100%", borderRadius: 8, background: "#000" }}
         />
-        <button type="button" style={{ marginTop: 8 }} onClick={takePhoto}>
-          Maak foto
+        <button type="button" className="camera-btn" style={{ marginTop: 8 }} onClick={takePhoto}>
+          📷 Maak foto
         </button>
       </div>
     );
@@ -116,12 +123,11 @@ export default function CameraCapture({ onCapture, capturedPreviewUrl, onRetake 
 
   return (
     <div>
-      <button type="button" onClick={startCamera}>
-        Camera openen
+      <button type="button" className="camera-btn" onClick={startCamera}>
+        📷 Maak foto
       </button>
-      <div className="hint">
-        Neemt de foto rechtstreeks op — je kan geen bestaande foto uit je
-        galerij kiezen.
+      <div className="hint" style={{ marginTop: 8 }}>
+        Opent de camera direct — je kan geen bestaande foto uit je galerij kiezen.
       </div>
     </div>
   );

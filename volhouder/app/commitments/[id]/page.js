@@ -109,24 +109,41 @@ export default async function CommitmentDetailPage({ params }) {
         )}
 
         {stats.total > 0 && (
-          <div className="stats-row">
-            <div className="stat-chip">
-              <div className="value">{stats.streak}</div>
-              <div className="label">Op rij</div>
+          <>
+            <div className="stats-row">
+              <div className="stat-chip">
+                <div className="value">{stats.streak > 0 ? `🔥 ${stats.streak}` : stats.streak}</div>
+                <div className="label">Op rij</div>
+              </div>
+              <div className="stat-chip">
+                <div className="value">{stats.rate}%</div>
+                <div className="label">Slaagrate</div>
+              </div>
+              {stats.longestStreak > 0 && (
+                <div className="stat-chip">
+                  <div className="value">{stats.longestStreak}</div>
+                  <div className="label">Beste streak</div>
+                </div>
+              )}
+              <div className="stat-chip">
+                <div className="value">{stats.successCount}/{stats.total}</div>
+                <div className="label">Geslaagd</div>
+              </div>
+              <div className="stat-chip">
+                <div className="value">€{Number(commitment.money_stake).toFixed(0)}</div>
+                <div className="label">Inzet</div>
+              </div>
             </div>
-            <div className="stat-chip">
-              <div className="value">{stats.rate}%</div>
-              <div className="label">Slaagrate</div>
-            </div>
-            <div className="stat-chip">
-              <div className="value">{stats.successCount}/{stats.total}</div>
-              <div className="label">Geslaagd</div>
-            </div>
-            <div className="stat-chip">
-              <div className="value">€{Number(commitment.money_stake).toFixed(0)}</div>
-              <div className="label">Inzet</div>
-            </div>
-          </div>
+            <p className="motivation-text">
+              {stats.streak === 0
+                ? "Vandaag is dag 1 — de start van iets groots."
+                : stats.streak < 7
+                ? "Je bent op weg. Hou vol!"
+                : stats.streak < 30
+                ? "Een week+ op rij — je bouwt echt een gewoonte."
+                : "Indrukwekkend. Dit is wie je bent geworden."}
+            </p>
+          </>
         )}
 
         <div className="card" style={{ marginBottom: 12 }}>
@@ -152,30 +169,53 @@ export default async function CommitmentDetailPage({ params }) {
         {todayCheckin ? (
           <>
             {isOwner && todayCheckin.status === "pending" && (
-              <CheckinForm
-                commitmentId={commitment.id}
-                checkin={todayCheckin}
-                proofType={commitment.proof_type}
-              />
+              <>
+                <div style={{ marginBottom: 8 }}>
+                  <span style={{ fontSize: 13, fontWeight: 600, color: "var(--warning)" }}>
+                    ⏰ Deadline: {commitment.deadline_time?.slice(0, 5)}
+                  </span>
+                </div>
+                <CheckinForm
+                  commitmentId={commitment.id}
+                  checkin={todayCheckin}
+                  proofType={commitment.proof_type}
+                />
+              </>
             )}
 
             {isOwner && (todayCheckin.status === "missed" || todayCheckin.status === "rejected") && (
               <div className="card">
                 <h2>Vandaag</h2>
                 <span className={`badge ${todayCheckin.status}`}>{STATUS_LABEL[todayCheckin.status]}</span>
-                <div style={{ marginTop: 12 }}>
-                  <DisputeButton checkinId={todayCheckin.id} commitmentId={commitment.id} />
-                </div>
+                <p style={{ margin: "8px 0 12px", fontSize: 13, color: "var(--muted)" }}>
+                  Niet erg — morgen is een nieuwe kans.
+                </p>
+                <DisputeButton checkinId={todayCheckin.id} commitmentId={commitment.id} />
               </div>
             )}
 
-            {isOwner && (todayCheckin.status === "approved" || todayCheckin.status === "disputed" || todayCheckin.status === "submitted") && (
+            {isOwner && todayCheckin.status === "approved" && (
+              <div className="card">
+                <h2>Vandaag</h2>
+                <span className={`badge approved`}>✅ Gelukt vandaag!</span>
+              </div>
+            )}
+
+            {isOwner && (todayCheckin.status === "disputed") && (
               <div className="card">
                 <h2>Vandaag</h2>
                 <span className={`badge ${todayCheckin.status}`}>{STATUS_LABEL[todayCheckin.status]}</span>
-                {todayCheckin.status === "disputed" && (
-                  <p style={{ margin: "8px 0 0", fontSize: 13, color: "var(--muted)" }}>Wacht op een partner om dit te beslechten.</p>
-                )}
+                <p style={{ margin: "8px 0 0", fontSize: 13, color: "var(--muted)" }}>Wacht op een partner om dit te beslechten.</p>
+              </div>
+            )}
+
+            {isOwner && todayCheckin.status === "submitted" && (
+              <div className="card">
+                <h2>Vandaag</h2>
+                <span className={`badge submitted`}>{STATUS_LABEL["submitted"]}</span>
+                <p style={{ margin: "8px 0 0", fontSize: 13, color: "var(--muted)" }}>
+                  ⏳ Wacht op beoordeling — wordt automatisch goedgekeurd na 24u
+                </p>
               </div>
             )}
 
@@ -217,7 +257,14 @@ export default async function CommitmentDetailPage({ params }) {
             </div>
             <div style={{ padding: "0 16px" }}>
               {partners.length === 0 && (
-                <div className="empty" style={{ padding: "12px 0" }}>Nog geen accountability-partner uitgenodigd.</div>
+                <div style={{ padding: "12px 0" }}>
+                  <p style={{ margin: "0 0 4px", fontSize: 14, color: "var(--black)", fontWeight: 600 }}>
+                    Voeg een accountability-partner toe.
+                  </p>
+                  <p style={{ margin: 0, fontSize: 13, color: "var(--muted)", lineHeight: 1.5 }}>
+                    Mensen met een partner halen hun doelen 65% vaker.
+                  </p>
+                </div>
               )}
               {partners.map((p) => (
                 <div key={p.profile_id} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "10px 0", borderBottom: "1px solid var(--border)" }}>
@@ -241,11 +288,17 @@ export default async function CommitmentDetailPage({ params }) {
           </div>
           <div style={{ padding: 16 }}>
             {(withPhotoUrls || []).length === 0 && (
-              <div className="empty">Nog geen geschiedenis.</div>
+              <div className="empty">Je geschiedenis verschijnt hier. Maak vandaag je eerste check-in.</div>
             )}
 
             {withPhotoUrls.length > 0 && (
-              <div className="history-dots" style={{ marginBottom: 16 }}>
+              <>
+                <div className="legend" style={{ marginBottom: 8 }}>
+                  <span>🟢 gelukt</span>
+                  <span>🔴 gemist</span>
+                  <span>🟡 pending</span>
+                </div>
+                <div className="history-dots" style={{ marginBottom: 16 }}>
                 {withPhotoUrls.slice(0, 28).map((h) => (
                   <div
                     key={h.id}
@@ -255,7 +308,8 @@ export default async function CommitmentDetailPage({ params }) {
                     {formatDay(h.due_date)}
                   </div>
                 ))}
-              </div>
+                </div>
+              </>
             )}
 
             {(withPhotoUrls || []).map((h) => (
