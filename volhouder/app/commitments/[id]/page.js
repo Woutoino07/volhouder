@@ -10,6 +10,8 @@ import ResolveDisputeButtons from "./ResolveDisputeButtons";
 import PauseButton from "./PauseButton";
 import AddPartnerForm from "./AddPartnerForm";
 import RemovePartnerButton from "./RemovePartnerButton";
+import DeleteCommitmentButton from "./DeleteCommitmentButton";
+import CalendarHeatmap from "./CalendarHeatmap";
 
 const STATUS_LABEL = {
   pending: "nog te doen",
@@ -79,7 +81,7 @@ export default async function CommitmentDetailPage({ params }) {
     .select("*")
     .eq("commitment_id", commitment.id)
     .order("due_date", { ascending: false })
-    .limit(60);
+    .limit(120);
 
   const stats = computeStats(history || []);
 
@@ -277,10 +279,30 @@ export default async function CommitmentDetailPage({ params }) {
               </div>
             </div>
             <div style={{ padding: "0 16px 14px" }}>
-              <PauseButton commitmentId={commitment.id} active={commitment.active} />
+              <div style={{ display: "flex", gap: 8, marginBottom: 8 }}>
+                <PauseButton commitmentId={commitment.id} active={commitment.active} />
+                <Link href={`/commitments/${commitment.id}/edit`} className="btn secondary" style={{ flex: 1, justifyContent: "center" }}>
+                  ✏️ Bewerken
+                </Link>
+              </div>
+              <DeleteCommitmentButton commitmentId={commitment.id} />
             </div>
           </div>
         )}
+
+        <div className="card">
+          <h2>Kalender</h2>
+          <div className="legend" style={{ marginBottom: 12 }}>
+            <span><span style={{display:"inline-block",width:10,height:10,borderRadius:2,background:"#16A34A",marginRight:4}}/>gelukt</span>
+            <span><span style={{display:"inline-block",width:10,height:10,borderRadius:2,background:"#DC2626",marginRight:4}}/>gemist</span>
+            <span><span style={{display:"inline-block",width:10,height:10,borderRadius:2,background:"#D97706",marginRight:4}}/>wacht</span>
+          </div>
+          <CalendarHeatmap
+            history={history || []}
+            frequency={commitment.frequency}
+            daysOfWeek={commitment.days_of_week}
+          />
+        </div>
 
         <div className="card-section">
           <div className="card-section-header">

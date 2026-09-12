@@ -15,6 +15,7 @@ export default function CheckinForm({ commitmentId, checkin, proofType }) {
   const [confirmed, setConfirmed] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
+  const [success, setSuccess] = useState(false);
 
   const needsPhoto = proofType === "photo";
   const showPhoto = proofType === "photo" || proofType === "both";
@@ -82,7 +83,18 @@ export default function CheckinForm({ commitmentId, checkin, proofType }) {
     }
 
     notifyEvent("submitted", commitmentId);
-    router.refresh();
+    setSuccess(true);
+    setTimeout(() => router.refresh(), 2000);
+  }
+
+  if (success) {
+    return (
+      <div className="card checkin-celebration">
+        <div className="celebration-icon">✅</div>
+        <h2>Gelukt!</h2>
+        <p className="celebration-streak">Check-in ingediend. Je partner beoordeelt dit binnen 24 uur.</p>
+      </div>
+    );
   }
 
   return (

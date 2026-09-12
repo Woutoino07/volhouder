@@ -18,9 +18,14 @@
   --shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
   --bottom-nav-height: 60px;
   --card: #FFFFFF;
-  --accent: #0F1F3D;
-  --accent-hover: #1B3A6B;
+  --accent: #2563EB;
+  --accent-hover: #1D4ED8;
   --accent-text: #FFFFFF;
+  --navy-warm: #1a2744;
+  --accent-light: #EFF6FF;
+  --success-light: #F0FDF4;
+  --danger-light: #FEF2F2;
+  --warning-light: #FFFBEB;
 }
 
 * {
@@ -179,6 +184,11 @@ h3 {
   box-shadow: var(--shadow);
   padding: 16px;
   margin-bottom: 12px;
+  transition: box-shadow 0.2s ease;
+}
+
+.card:hover {
+  box-shadow: 0 4px 12px rgba(15, 31, 61, 0.08);
 }
 
 .card-section {
@@ -341,12 +351,12 @@ h3 {
   white-space: nowrap;
 }
 
-.badge.pending    { background: var(--warning-bg); color: var(--warning); }
+.badge.pending    { background: var(--warning-light); color: #D97706; }
 .badge.submitted  { background: #EFF6FF; color: #1D4ED8; }
-.badge.approved   { background: var(--success-bg); color: var(--success); }
-.badge.rejected   { background: var(--danger-bg); color: var(--danger); }
-.badge.missed     { background: var(--danger-bg); color: var(--danger); }
-.badge.disputed   { background: var(--warning-bg); color: var(--warning); }
+.badge.approved   { background: var(--success-light); color: #15803D; }
+.badge.rejected   { background: var(--danger-light); color: #DC2626; }
+.badge.missed     { background: var(--danger-light); color: #DC2626; }
+.badge.disputed   { background: #F5F3FF; color: #7C3AED; }
 .badge.paused     { background: var(--bg-secondary); color: var(--muted); }
 .badge.freq       { background: var(--bg-secondary); color: var(--muted); }
 .badge.navy       { background: var(--navy); color: #fff; }
@@ -365,16 +375,19 @@ button, .btn {
   font-weight: 600;
   cursor: pointer;
   text-decoration: none;
-  transition: background 0.15s ease, transform 0.05s ease;
+  transition: background 0.15s, transform 0.15s, box-shadow 0.15s;
   font-family: inherit;
 }
 
-button:hover:not(:disabled) {
-  background: var(--navy-medium);
+button:hover:not(:disabled), .btn:hover:not(:disabled) {
+  background: var(--navy-warm);
+  box-shadow: 0 4px 12px rgba(15, 31, 61, 0.25);
+  transform: translateY(-1px);
 }
 
-button:active:not(:disabled) {
-  transform: scale(0.98);
+button:active:not(:disabled), .btn:active:not(:disabled) {
+  transform: scale(0.97);
+  transition: transform 0.1s;
 }
 
 button:disabled {
@@ -543,6 +556,12 @@ textarea {
   border-bottom: 1px solid var(--border);
   text-decoration: none;
   color: var(--text);
+  transition: background 0.15s, transform 0.15s;
+}
+
+.commitment-item:hover {
+  background: var(--accent-light);
+  transform: translateX(2px);
 }
 
 .commitment-item:last-child {
@@ -914,4 +933,152 @@ img.proof-photo {
   font-size: 12px;
   color: var(--muted);
   margin-bottom: 8px;
+}
+
+.btn.danger {
+  background: #FEE2E2;
+  color: #DC2626;
+  border: 1px solid #FECACA;
+}
+.btn.danger:hover {
+  background: #DC2626;
+  color: white;
+}
+.confirm-box {
+  background: #FEF2F2;
+  border: 1px solid #FECACA;
+  border-radius: var(--radius);
+  padding: 16px;
+  margin-top: 12px;
+}
+.confirm-box p {
+  font-size: 14px;
+  color: #7F1D1D;
+  margin-bottom: 12px;
+}
+
+/* ── Calendar Heatmap ─────────────────────────────── */
+.calendar-heatmap {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+}
+
+.month-label {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--muted);
+  text-transform: capitalize;
+  margin-bottom: 8px;
+}
+
+.weekday-headers {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 3px;
+  margin-bottom: 3px;
+}
+
+.weekday-header {
+  font-size: 10px;
+  color: var(--muted);
+  text-align: center;
+  font-weight: 500;
+}
+
+.day-grid {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 3px;
+}
+
+.day-cell {
+  aspect-ratio: 1;
+  border-radius: 4px;
+  background: var(--bg-secondary);
+  cursor: default;
+  transition: transform 0.1s;
+}
+
+.day-cell:hover {
+  transform: scale(1.15);
+}
+
+.day-cell.empty,
+.day-cell.not-due {
+  background: transparent;
+}
+
+.day-cell.due {
+  background: var(--border);
+}
+
+.day-cell.approved {
+  background: #16A34A;
+}
+
+.day-cell.missed {
+  background: #DC2626;
+}
+
+.day-cell.rejected {
+  background: #DC2626;
+  opacity: 0.7;
+}
+
+.day-cell.submitted,
+.day-cell.pending {
+  background: #D97706;
+}
+
+.day-cell.disputed {
+  background: #7C3AED;
+}
+
+/* ── Check-in celebration ─────────────────────────── */
+.checkin-celebration {
+  text-align: center;
+  padding: 48px 24px;
+  animation: celebrate-in 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+@keyframes celebrate-in {
+  from {
+    opacity: 0;
+    transform: scale(0.8);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+.celebration-icon {
+  font-size: 64px;
+  line-height: 1;
+  margin-bottom: 16px;
+  animation: bounce-in 0.5s cubic-bezier(0.34, 1.56, 0.64, 1) 0.1s both;
+}
+
+@keyframes bounce-in {
+  from {
+    transform: scale(0);
+  }
+  to {
+    transform: scale(1);
+  }
+}
+
+.checkin-celebration h2 {
+  font-size: 28px;
+  font-weight: 800;
+  color: var(--navy);
+  margin-bottom: 8px;
+}
+
+.celebration-streak {
+  font-size: 15px;
+  color: var(--muted);
+  max-width: 260px;
+  margin: 0 auto;
 }
