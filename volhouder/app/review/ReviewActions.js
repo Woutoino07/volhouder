@@ -28,15 +28,7 @@ export default function ReviewActions({ checkinId }) {
     const { data: { user } } = await supabase.auth.getUser();
     await supabase.rpc("reject_checkin", {
       p_checkin_id: checkinId,
-      p_judge_id: user.id,
       p_reason: reason.trim(),
-    }).then(async ({ error }) => {
-      if (error) {
-        await supabase
-          .from("check_ins")
-          .update({ status: "rejected", judged_by: user.id, judged_at: new Date().toISOString(), rejection_reason: reason.trim() })
-          .eq("id", checkinId);
-      }
     });
     router.refresh();
   }
@@ -49,7 +41,7 @@ export default function ReviewActions({ checkinId }) {
           onChange={(e) => setReason(e.target.value)}
           placeholder="Reden voor afkeuring..."
           rows={2}
-          style={{ fontSize: 13, padding: "8px 10px", borderRadius: "var(--radius)", border: "1px solid var(--border)", background: "var(--surface)", color: "var(--text)", resize: "none", fontFamily: "inherit" }}
+          style={{ fontSize: 13, padding: "8px 10px", borderRadius: "var(--radius)", border: "1px solid var(--border)", background: "var(--glass-bg-strong)", color: "var(--text-primary)", resize: "none", fontFamily: "inherit" }}
           autoFocus
         />
         <div style={{ display: "flex", gap: 6 }}>
@@ -62,7 +54,7 @@ export default function ReviewActions({ checkinId }) {
           </button>
           <button
             onClick={() => { setRejecting(false); setReason(""); }}
-            style={{ padding: "8px 12px", fontSize: 13, borderRadius: "var(--radius)", background: "var(--surface-secondary)", color: "var(--text)", border: "1px solid var(--border)", cursor: "pointer" }}
+            style={{ padding: "8px 12px", fontSize: 13, borderRadius: "var(--radius)", background: "var(--bg-secondary)", color: "var(--text-primary)", border: "1px solid var(--border)", cursor: "pointer" }}
           >
             Annuleer
           </button>
