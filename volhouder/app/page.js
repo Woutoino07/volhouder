@@ -4,6 +4,9 @@ import NotificationSetup from "@/components/NotificationSetup";
 import { createClient } from "@/lib/supabase/server";
 import { cleanupOldPhotos } from "@/lib/cleanupOldPhotos";
 import { computeStats } from "@/lib/stats";
+import {
+  CheckCircle2, XCircle, Clock, MinusCircle, Flame, Zap, Star, Plus, Target, User
+} from "lucide-react";
 
 const STATUS_LABEL = {
   pending: "nog te doen",
@@ -12,15 +15,6 @@ const STATUS_LABEL = {
   rejected: "afgekeurd",
   missed: "gemist",
   disputed: "betwist",
-};
-
-const STATUS_ICON = {
-  pending: "🔥",
-  submitted: "⏳",
-  approved: "✅",
-  rejected: "❌",
-  missed: "❌",
-  disputed: "⚠️",
 };
 
 const FREQ_LABEL = {
@@ -42,6 +36,15 @@ function formatDate() {
     day: "numeric",
     month: "long",
   });
+}
+
+function StatusIcon({ status, active }) {
+  if (!active) return <MinusCircle size={14} strokeWidth={1.75} style={{ color: "var(--muted)" }} />;
+  if (status === "pending") return <Flame size={14} strokeWidth={1.75} style={{ color: "var(--warning)" }} />;
+  if (status === "submitted") return <Clock size={14} strokeWidth={1.75} style={{ color: "var(--muted)" }} />;
+  if (status === "approved") return <CheckCircle2 size={14} strokeWidth={1.75} style={{ color: "var(--success)" }} />;
+  if (status === "rejected" || status === "missed") return <XCircle size={14} strokeWidth={1.75} style={{ color: "var(--danger)" }} />;
+  return null;
 }
 
 export default async function DashboardPage() {
@@ -137,11 +140,11 @@ export default async function DashboardPage() {
         {rows.length > 0 && (
           <div className="stats-row">
             <div className="stat-chip">
-              <div className="value">
+              <div className="value" style={{ display: "flex", alignItems: "center", gap: 4, justifyContent: "center" }}>
                 {totalStreak === 0
-                  ? "🚀"
+                  ? <Zap size={16} strokeWidth={1.75} style={{ color: "var(--warning)" }} />
                   : totalStreak > 7
-                  ? `🔥 ${totalStreak}`
+                  ? <><Flame size={16} strokeWidth={1.75} style={{ color: "var(--warning)" }} /> {totalStreak}</>
                   : totalStreak}
               </div>
               <div className="label">
@@ -149,8 +152,8 @@ export default async function DashboardPage() {
               </div>
             </div>
             <div className="stat-chip">
-              <div className="value">
-                {overallRate > 80 ? `⭐ ${overallRate}%` : `${overallRate}%`}
+              <div className="value" style={{ display: "flex", alignItems: "center", gap: 4, justifyContent: "center" }}>
+                {overallRate > 80 ? <><Star size={14} strokeWidth={1.75} style={{ color: "var(--warning)" }} /> {overallRate}%</> : `${overallRate}%`}
               </div>
               <div className="label">{overallRate > 80 ? "uitstekend" : "Slaagrate"}</div>
             </div>
@@ -176,7 +179,9 @@ export default async function DashboardPage() {
         {rows.length === 0 ? (
           <div className="card">
             <div className="empty-state">
-              <div className="empty-state-icon">🎯</div>
+              <div className="empty-state-icon">
+                <Target size={24} strokeWidth={1.75} />
+              </div>
               <h3>Start je eerste commitment</h3>
               <p>Kies iets dat je wil volhouden. Een gewoonte, een doel, een belofte aan jezelf.</p>
               <Link href="/commitments/new" className="btn">Begin nu</Link>
@@ -194,12 +199,6 @@ export default async function DashboardPage() {
             const rate = stats.total > 0 ? Math.round((stats.successCount / stats.total) * 100) : 0;
             const isPending = checkin?.status === "pending";
 
-            const statusIcon = !commitment.active
-              ? "⏸️"
-              : checkin
-              ? STATUS_ICON[checkin.status] || ""
-              : "";
-
             return (
               <Link
                 key={commitment.id}
@@ -207,8 +206,10 @@ export default async function DashboardPage() {
                 className="commitment-card"
               >
                 <div className="commitment-card-header">
-                  <span className="commitment-card-title">
-                    {statusIcon && <span style={{ marginRight: 6 }}>{statusIcon}</span>}
+                  <span className="commitment-card-title" style={{ display: "flex", alignItems: "center", gap: 6 }}>
+                    {(checkin || !commitment.active) && (
+                      <StatusIcon status={checkin?.status} active={commitment.active} />
+                    )}
                     {commitment.title}
                   </span>
                   {!commitment.active ? (
@@ -222,10 +223,14 @@ export default async function DashboardPage() {
 
                 <div className="commitment-card-meta">
                   <span className="badge freq">{FREQ_LABEL[commitment.frequency]}</span>
-                  <span className="badge freq">vóór {commitment.deadline_time?.slice(0, 5)}</span>
+                  <span className="badge freq" style={{ display: "inline-flex", alignItems: "center", gap: 3 }}>
+                    <Clock size={11} strokeWidth={1.75} />
+                    {commitment.deadline_time?.slice(0, 5)}
+                  </span>
                   {partnerLabel && (
-                    <span style={{ fontSize: 12, color: "var(--muted)" }}>
-                      👤 {partnerLabel}
+                    <span style={{ fontSize: 12, color: "var(--muted)", display: "inline-flex", alignItems: "center", gap: 3 }}>
+                      <User size={11} strokeWidth={1.75} />
+                      {partnerLabel}
                     </span>
                   )}
                 </div>
@@ -233,9 +238,9 @@ export default async function DashboardPage() {
                 {stats.total > 0 && (
                   <div>
                     <div style={{ display: "flex", justifyContent: "space-between", fontSize: 11, color: "var(--muted)", marginBottom: 4 }}>
-                      <span>
+                      <span style={{ display: "flex", alignItems: "center", gap: 3 }}>
                         {stats.streak > 0
-                          ? `🔥 ${stats.streak} dagen op rij`
+                          ? <><Flame size={11} strokeWidth={1.75} style={{ color: "var(--warning)" }} /> {stats.streak} dagen op rij</>
                           : "Nog geen streak"}
                       </span>
                       <span>{rate}%</span>
@@ -251,7 +256,7 @@ export default async function DashboardPage() {
 
                 {isPending && commitment.active && (
                   <div style={{ marginTop: 12 }}>
-                    <div className="btn-checkin">Check in ✓</div>
+                    <div className="btn-checkin">Check in</div>
                   </div>
                 )}
               </Link>
@@ -260,7 +265,9 @@ export default async function DashboardPage() {
         )}
       </div>
 
-      <Link href="/commitments/new" className="fab" title="Nieuwe commitment">+</Link>
+      <Link href="/commitments/new" className="fab" title="Nieuwe commitment">
+        <Plus size={22} strokeWidth={2} />
+      </Link>
     </>
   );
 }

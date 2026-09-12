@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import { notifyEvent } from "@/lib/notify";
 import CameraCapture from "./CameraCapture";
+import { CheckCircle2 } from "lucide-react";
 
 export default function CheckinForm({ commitmentId, checkin, proofType }) {
   const router = useRouter();
@@ -90,7 +91,7 @@ export default function CheckinForm({ commitmentId, checkin, proofType }) {
   if (success) {
     return (
       <div className="card checkin-celebration">
-        <div className="celebration-icon">✅</div>
+        <div className="celebration-icon"><CheckCircle2 size={32} strokeWidth={1.75} /></div>
         <h2>Gelukt!</h2>
         <p className="celebration-streak">Check-in ingediend. Je partner beoordeelt dit binnen 24 uur.</p>
       </div>

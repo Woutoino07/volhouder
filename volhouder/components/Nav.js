@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { Home, CheckSquare, CreditCard, User, Target } from "lucide-react";
 
 export default function Nav({ pendingReviewCount = 0 }) {
   const pathname = usePathname();
@@ -12,10 +13,10 @@ export default function Nav({ pendingReviewCount = 0 }) {
   }
 
   const navItems = [
-    { href: "/", icon: "⊞", label: "Home" },
-    { href: "/review", icon: "✓", label: "Beoordeel", badge: pendingReviewCount },
-    { href: "/ledger", icon: "◈", label: "Schulden" },
-    { href: "/account", icon: "◎", label: "Account" },
+    { href: "/", icon: <Home size={20} strokeWidth={1.75} />, label: "Home" },
+    { href: "/review", icon: <CheckSquare size={20} strokeWidth={1.75} />, label: "Beoordeel", badge: pendingReviewCount },
+    { href: "/ledger", icon: <CreditCard size={20} strokeWidth={1.75} />, label: "Schulden" },
+    { href: "/account", icon: <User size={20} strokeWidth={1.75} />, label: "Account" },
   ];
 
   return (
@@ -34,13 +35,16 @@ export default function Nav({ pendingReviewCount = 0 }) {
       {/* Desktop sidebar */}
       <aside className="sidebar">
         <span style={{
-          display: "block",
+          display: "flex",
+          alignItems: "center",
+          gap: "8px",
           color: "#fff",
           fontSize: "20px",
           fontWeight: 700,
           padding: "0 24px 32px",
           letterSpacing: "-0.02em",
         }}>
+          <Target size={18} strokeWidth={1.75} />
           Volhouder
         </span>
 
@@ -76,7 +80,7 @@ export default function Nav({ pendingReviewCount = 0 }) {
                 }
               }}
             >
-              <span style={{ fontSize: "18px", lineHeight: 1 }}>{icon}</span>
+              <span style={{ display: "flex", alignItems: "center", lineHeight: 1 }}>{icon}</span>
               <span>{label}</span>
               {badge > 0 && (
                 <span style={{

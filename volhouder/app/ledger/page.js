@@ -3,6 +3,7 @@ import Nav from "@/components/Nav";
 import { createClient } from "@/lib/supabase/server";
 import SettleButton from "./SettleButton";
 import PayButton from "./PayButton";
+import { CheckCircle2 } from "lucide-react";
 
 export default async function LedgerPage() {
   const supabase = createClient();
@@ -81,7 +82,7 @@ export default async function LedgerPage() {
         {open.length === 0 && settled.length === 0 && (
           <div className="card">
             <div className="empty-state">
-              <div className="empty-state-icon">💚</div>
+              <div className="empty-state-icon"><CheckCircle2 size={24} strokeWidth={1.75} /></div>
               <h3>Geen openstaande schulden</h3>
               <p>Je staat er goed voor. Blijf je commitments nakomen!</p>
             </div>

@@ -1,6 +1,7 @@
 import Link from "next/link";
 import Nav from "@/components/Nav";
 import { createClient } from "@/lib/supabase/server";
+import { CheckSquare, ChevronRight } from "lucide-react";
 
 function relativeDate(dateStr) {
   if (!dateStr) return dateStr;
@@ -82,7 +83,7 @@ export default async function ReviewPage() {
           </div>
           {pending.length === 0 && (
             <div className="empty-state">
-              <div className="empty-state-icon">✨</div>
+              <div className="empty-state-icon"><CheckSquare size={24} strokeWidth={1.75} /></div>
               <h3>Alles bijgewerkt</h3>
               <p>Er is niets om te beoordelen op dit moment. Je partners stellen je op de hoogte wanneer ze een check-in indienen.</p>
             </div>
@@ -100,7 +101,7 @@ export default async function ReviewPage() {
                   </div>
                 )}
               </div>
-              <span className="badge submitted">bekijk</span>
+              <span className="badge submitted" style={{ display: "inline-flex", alignItems: "center", gap: 2 }}>bekijk <ChevronRight size={12} strokeWidth={1.75} /></span>
             </Link>
           ))}
         </div>

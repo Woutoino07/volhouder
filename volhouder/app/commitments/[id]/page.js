@@ -12,6 +12,7 @@ import AddPartnerForm from "./AddPartnerForm";
 import RemovePartnerButton from "./RemovePartnerButton";
 import DeleteCommitmentButton from "./DeleteCommitmentButton";
 import CalendarHeatmap from "./CalendarHeatmap";
+import { ArrowLeft, Pencil, Flame, Users, Clock, CheckCircle2 } from "lucide-react";
 
 const STATUS_LABEL = {
   pending: "nog te doen",
@@ -55,7 +56,9 @@ export default async function CommitmentDetailPage({ params }) {
         <div className="shell">
           <div style={{ paddingTop: 20 }}>
             <div className="error-box">Deze commitment bestaat niet (meer), of je hebt er geen toegang toe.</div>
-            <Link href="/" className="btn secondary">← Terug naar home</Link>
+            <Link href="/" className="btn secondary" style={{ display: "inline-flex", alignItems: "center", gap: 6 }}>
+              <ArrowLeft size={16} strokeWidth={1.75} /> Terug naar home
+            </Link>
           </div>
         </div>
       </>
@@ -100,7 +103,9 @@ export default async function CommitmentDetailPage({ params }) {
       <Nav />
       <div className="shell">
         <div className="detail-header">
-          <Link href="/" className="back-btn">←</Link>
+          <Link href="/" className="back-btn">
+            <ArrowLeft size={16} strokeWidth={1.75} />
+          </Link>
           <h1>{commitment.title}</h1>
         </div>
 
@@ -114,7 +119,10 @@ export default async function CommitmentDetailPage({ params }) {
           <>
             <div className="stats-row">
               <div className="stat-chip">
-                <div className="value">{stats.streak > 0 ? `🔥 ${stats.streak}` : stats.streak}</div>
+                <div className="value" style={{ display: "flex", alignItems: "center", gap: 4, justifyContent: "center" }}>
+                  {stats.streak > 0 && <Flame size={16} strokeWidth={1.75} style={{ color: "var(--warning)" }} />}
+                  {stats.streak}
+                </div>
                 <div className="label">Op rij</div>
               </div>
               <div className="stat-chip">
@@ -151,10 +159,12 @@ export default async function CommitmentDetailPage({ params }) {
         <div className="card" style={{ marginBottom: 12 }}>
           <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginBottom: commitment.description ? 10 : 0 }}>
             <span className="badge freq">{FREQ_LABEL[commitment.frequency]}</span>
-            <span className="badge freq">⏰ {commitment.deadline_time?.slice(0, 5)}</span>
+            <span className="badge freq" style={{ display: "inline-flex", alignItems: "center", gap: 3 }}>
+              <Clock size={12} strokeWidth={1.75} /> {commitment.deadline_time?.slice(0, 5)}
+            </span>
             {partners.length > 0 && (
-              <span className="badge freq">
-                👤 {partners.map((p) => p.profile?.display_name || p.profile?.email).join(", ")}
+              <span className="badge freq" style={{ display: "inline-flex", alignItems: "center", gap: 3 }}>
+                <Users size={12} strokeWidth={1.75} /> {partners.map((p) => p.profile?.display_name || p.profile?.email).join(", ")}
               </span>
             )}
             {!isOwner && commitment.owner && (
@@ -173,8 +183,8 @@ export default async function CommitmentDetailPage({ params }) {
             {isOwner && todayCheckin.status === "pending" && (
               <>
                 <div style={{ marginBottom: 8 }}>
-                  <span style={{ fontSize: 13, fontWeight: 600, color: "var(--warning)" }}>
-                    ⏰ Deadline: {commitment.deadline_time?.slice(0, 5)}
+                  <span style={{ fontSize: 13, fontWeight: 600, color: "var(--warning)", display: "inline-flex", alignItems: "center", gap: 4 }}>
+                    <Clock size={13} strokeWidth={1.75} /> Deadline: {commitment.deadline_time?.slice(0, 5)}
                   </span>
                 </div>
                 <CheckinForm
@@ -199,7 +209,9 @@ export default async function CommitmentDetailPage({ params }) {
             {isOwner && todayCheckin.status === "approved" && (
               <div className="card">
                 <h2>Vandaag</h2>
-                <span className={`badge approved`}>✅ Gelukt vandaag!</span>
+                <span className={`badge approved`} style={{ display: "inline-flex", alignItems: "center", gap: 4 }}>
+                  <CheckCircle2 size={13} strokeWidth={1.75} /> Gelukt vandaag!
+                </span>
               </div>
             )}
 
@@ -215,8 +227,8 @@ export default async function CommitmentDetailPage({ params }) {
               <div className="card">
                 <h2>Vandaag</h2>
                 <span className={`badge submitted`}>{STATUS_LABEL["submitted"]}</span>
-                <p style={{ margin: "8px 0 0", fontSize: 13, color: "var(--muted)" }}>
-                  ⏳ Wacht op beoordeling — wordt automatisch goedgekeurd na 24u
+                <p style={{ margin: "8px 0 0", fontSize: 13, color: "var(--muted)", display: "flex", alignItems: "center", gap: 4 }}>
+                  <Clock size={13} strokeWidth={1.75} /> Wacht op beoordeling — wordt automatisch goedgekeurd na 24u
                 </p>
               </div>
             )}
@@ -281,8 +293,8 @@ export default async function CommitmentDetailPage({ params }) {
             <div style={{ padding: "0 16px 14px" }}>
               <div style={{ display: "flex", gap: 8, marginBottom: 8 }}>
                 <PauseButton commitmentId={commitment.id} active={commitment.active} />
-                <Link href={`/commitments/${commitment.id}/edit`} className="btn secondary" style={{ flex: 1, justifyContent: "center" }}>
-                  ✏️ Bewerken
+                <Link href={`/commitments/${commitment.id}/edit`} className="btn secondary" style={{ flex: 1, justifyContent: "center", display: "inline-flex", alignItems: "center", gap: 6 }}>
+                  <Pencil size={14} strokeWidth={1.75} /> Bewerken
                 </Link>
               </div>
               <DeleteCommitmentButton commitmentId={commitment.id} />
@@ -316,9 +328,9 @@ export default async function CommitmentDetailPage({ params }) {
             {withPhotoUrls.length > 0 && (
               <>
                 <div className="legend" style={{ marginBottom: 8 }}>
-                  <span>🟢 gelukt</span>
-                  <span>🔴 gemist</span>
-                  <span>🟡 pending</span>
+                  <span><span style={{display:"inline-block",width:8,height:8,borderRadius:"50%",background:"#16A34A",marginRight:4}}/>gelukt</span>
+                  <span><span style={{display:"inline-block",width:8,height:8,borderRadius:"50%",background:"#DC2626",marginRight:4}}/>gemist</span>
+                  <span><span style={{display:"inline-block",width:8,height:8,borderRadius:"50%",background:"#D97706",marginRight:4}}/>pending</span>
                 </div>
                 <div className="history-dots" style={{ marginBottom: 16 }}>
                 {withPhotoUrls.slice(0, 28).map((h) => (

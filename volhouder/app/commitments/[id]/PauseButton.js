@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
+import { Pause, Play } from "lucide-react";
 
 export default function PauseButton({ commitmentId, active }) {
   const router = useRouter();
@@ -24,8 +25,10 @@ export default function PauseButton({ commitmentId, active }) {
   }
 
   return (
-    <button type="button" className="secondary" disabled={loading} onClick={toggle}>
-      {loading ? "Bezig..." : active ? "Pauzeer deze commitment" : "Hervat deze commitment"}
+    <button type="button" className="secondary" disabled={loading} onClick={toggle} style={{ display: "inline-flex", alignItems: "center", gap: 6 }}>
+      {loading ? "Bezig..." : active
+        ? <><Pause size={14} strokeWidth={1.75} /> Pauzeer deze commitment</>
+        : <><Play size={14} strokeWidth={1.75} /> Hervat deze commitment</>}
     </button>
   );
 }

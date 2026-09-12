@@ -2,6 +2,8 @@
 
 import { useEffect, useRef, useState } from "react";
 
+import { Camera } from "lucide-react";
+
 // Een foto nemen die écht op dit moment gemaakt is, in plaats van een
 // bestaand bestand uit de galerij te kunnen kiezen. Valt terug op een
 // gewone bestandskiezer als de camera niet beschikbaar/toegestaan is —
@@ -90,7 +92,7 @@ export default function CameraCapture({ onCapture, capturedPreviewUrl, onRetake 
     return (
       <div>
         {error && <div className="hint">{error}</div>}
-        <label className="camera-btn">
+        <label className="camera-btn" style={{ display: "inline-flex", alignItems: "center", gap: 6 }}>
           <input
             type="file"
             accept="image/*"
@@ -98,7 +100,7 @@ export default function CameraCapture({ onCapture, capturedPreviewUrl, onRetake 
             onChange={handleFallbackFile}
             style={{ display: "none" }}
           />
-          📷 Maak foto
+          <Camera size={18} strokeWidth={1.75} /> Maak foto
         </label>
       </div>
     );
@@ -114,8 +116,8 @@ export default function CameraCapture({ onCapture, capturedPreviewUrl, onRetake 
           muted
           style={{ width: "100%", borderRadius: 8, background: "#000" }}
         />
-        <button type="button" className="camera-btn" style={{ marginTop: 8 }} onClick={takePhoto}>
-          📷 Maak foto
+        <button type="button" className="camera-btn" style={{ marginTop: 8, display: "inline-flex", alignItems: "center", gap: 6 }} onClick={takePhoto}>
+          <Camera size={18} strokeWidth={1.75} /> Maak foto
         </button>
       </div>
     );
@@ -123,8 +125,8 @@ export default function CameraCapture({ onCapture, capturedPreviewUrl, onRetake 
 
   return (
     <div>
-      <button type="button" className="camera-btn" onClick={startCamera}>
-        📷 Maak foto
+      <button type="button" className="camera-btn" onClick={startCamera} style={{ display: "inline-flex", alignItems: "center", gap: 6 }}>
+        <Camera size={18} strokeWidth={1.75} /> Maak foto
       </button>
       <div className="hint" style={{ marginTop: 8 }}>
         Opent de camera direct — je kan geen bestaande foto uit je galerij kiezen.
