@@ -1,6 +1,7 @@
 import Link from "next/link";
 import Nav from "@/components/Nav";
 import { createClient } from "@/lib/supabase/server";
+import { computeStats } from "@/lib/stats";
 import {
   weeklySuccessTrend,
   moneyLostByMonth,
@@ -8,8 +9,57 @@ import {
   reviewSpeedHours,
   debtBalanceByMonth,
   commitmentRanking,
+  habitWeekGrid,
 } from "@/lib/progress";
-import { TrendingUp, Coins, Clock, Scale, Trophy } from "lucide-react";
+import { TrendingUp, Coins, Clock, Scale, Trophy, Repeat, Flame } from "lucide-react";
+
+const WEEKDAY_LETTERS = ["M", "D", "W", "D", "V", "Z", "Z"];
+
+function HabitCard({ commitment, checkIns }) {
+  const history = checkIns.filter((c) => c.commitment_id === commitment.id);
+  const stats = computeStats(history);
+  const grid = habitWeekGrid(checkIns, commitment.id, 4);
+
+  return (
+    <div className="habit-card">
+      <div className="habit-card-header">
+        <span className="habit-card-icon"><Repeat size={13} strokeWidth={2} /></span>
+        <span className="habit-card-title">{commitment.title}</span>
+      </div>
+
+      <div className="habit-card-stats">
+        <span className="habit-card-fraction">
+          {stats.successCount}<span className="habit-card-fraction-total">/{stats.total}</span>
+        </span>
+        <span className="habit-card-rate">
+          {stats.streak > 0 && (
+            <span style={{ display: "inline-flex", alignItems: "center", gap: 3, color: "var(--warning)", fontWeight: 700, marginRight: 8 }}>
+              <Flame size={11} strokeWidth={2} /> {stats.streak}
+            </span>
+          )}
+          {stats.rate !== null ? `${stats.rate}%` : "—"}
+        </span>
+      </div>
+
+      <div className="habit-week-labels">
+        {WEEKDAY_LETTERS.map((l, i) => <span key={i}>{l}</span>)}
+      </div>
+      <div className="habit-week-grid">
+        {grid.map((row, ri) => (
+          <div className="habit-week-row" key={ri}>
+            {row.map((cell) => (
+              <span
+                key={cell.date}
+                title={`${cell.date}${cell.status ? ` — ${cell.status}` : ""}`}
+                className={`habit-cell ${cell.future ? "future" : cell.status || "none"}`}
+              />
+            ))}
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
 
 function ChartCard({ icon, title, subtitle, children }) {
   return (
@@ -81,8 +131,10 @@ export default async function ProgressPage() {
 
   const { data: commitments } = await supabase
     .from("commitments")
-    .select("id, title, money_stake")
+    .select("id, title, money_stake, frequency, active")
     .eq("owner_id", user.id);
+
+  const habits = (commitments || []).filter((c) => c.active && c.frequency !== "once");
 
   const commitmentIds = (commitments || []).map((c) => c.id);
 
@@ -117,8 +169,8 @@ export default async function ProgressPage() {
       <Nav />
       <div className="shell">
         <div className="dashboard-header">
-          <div className="dashboard-greeting">Progressie</div>
-          <div className="dashboard-date">Inzichten over al je commitments</div>
+          <div className="dashboard-greeting">Inzichten</div>
+          <div className="dashboard-date">Gewoontes en progressie in één oogopslag</div>
         </div>
 
         {(!commitments || commitments.length === 0) && (
@@ -131,8 +183,24 @@ export default async function ProgressPage() {
           </div>
         )}
 
+        {habits.length > 0 && (
+          <>
+            <div className="section-header" style={{ marginTop: 0 }}>
+              <span className="section-title" style={{ fontSize: 16 }}>Gewoontes</span>
+            </div>
+            <div className="habit-card-grid">
+              {habits.map((h) => (
+                <HabitCard key={h.id} commitment={h} checkIns={checkIns} />
+              ))}
+            </div>
+          </>
+        )}
+
         {commitments && commitments.length > 0 && (
           <>
+            <div className="section-header">
+              <span className="section-title" style={{ fontSize: 16 }}>Progressie</span>
+            </div>
             <ChartCard
               icon={<TrendingUp size={16} strokeWidth={2} color="var(--navy)" />}
               title="Slaagpercentage-trend"

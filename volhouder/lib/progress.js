@@ -115,6 +115,57 @@ export function debtBalanceByMonth(ledgerEntries, userId, months = 6) {
   return result;
 }
 
+// Laatste `days` dagen status voor één commitment, voor een compacte
+// habit-grid (Griply-stijl: patroon in één oogopslag).
+export function habitStrip(checkIns, commitmentId, days = 35) {
+  const statusByDate = {};
+  for (const c of checkIns) {
+    if (c.commitment_id === commitmentId) statusByDate[c.due_date] = c.status;
+  }
+  const result = [];
+  const today = new Date();
+  for (let i = days - 1; i >= 0; i--) {
+    const d = new Date(today);
+    d.setDate(d.getDate() - i);
+    const key = d.toISOString().slice(0, 10);
+    result.push({ date: key, status: statusByDate[key] || null });
+  }
+  return result;
+}
+
+// Rooster van `weeks` volledige weken (ma-zo, meest recente week onderaan/
+// laatst), voor een Griply-stijl gewoonte-kaart: elke rij is een week, elke
+// kolom een weekdag.
+export function habitWeekGrid(checkIns, commitmentId, weeks = 4) {
+  const statusByDate = {};
+  for (const c of checkIns) {
+    if (c.commitment_id === commitmentId) statusByDate[c.due_date] = c.status;
+  }
+
+  const today = new Date();
+  const todayStr = today.toISOString().slice(0, 10);
+  const dow = today.getDay();
+  const diffToMonday = dow === 0 ? -6 : 1 - dow;
+  const thisMonday = new Date(today);
+  thisMonday.setDate(thisMonday.getDate() + diffToMonday);
+
+  const startMonday = new Date(thisMonday);
+  startMonday.setDate(startMonday.getDate() - (weeks - 1) * 7);
+
+  const rows = [];
+  for (let w = 0; w < weeks; w++) {
+    const row = [];
+    for (let d = 0; d < 7; d++) {
+      const date = new Date(startMonday);
+      date.setDate(date.getDate() + w * 7 + d);
+      const key = date.toISOString().slice(0, 10);
+      row.push({ date: key, status: statusByDate[key] || null, future: key > todayStr });
+    }
+    rows.push(row);
+  }
+  return rows;
+}
+
 // Ranking van commitments op slaagpercentage (zwakste eerst).
 export function commitmentRanking(commitments, checkIns, ledgerEntries, userId) {
   return commitments
