@@ -3,10 +3,10 @@ import Nav from "@/components/Nav";
 import { createClient } from "@/lib/supabase/server";
 import { isDueOnDate } from "@/lib/schedule";
 import { inferIcon } from "@/lib/icons";
-import { ChevronLeft, ChevronRight, Plus, Repeat, TrendingUp, CloudUpload, Cloud, ArrowRight } from "lucide-react";
+import { ChevronLeft, ChevronRight, Plus, Repeat, TrendingUp, CloudUpload, ArrowRight } from "lucide-react";
 import { fetchICloudEvents } from "@/lib/icloud";
+import CalendarBoard from "./CalendarBoard";
 
-const DAY_LABELS = ["ma", "di", "wo", "do", "vr", "za", "zo"];
 const HOUR_START = 6;
 const HOUR_END = 24;
 const HOUR_HEIGHT = 56; // px per uur
@@ -19,13 +19,6 @@ function mondayOf(date) {
   d.setDate(d.getDate() + diff);
   d.setHours(0, 0, 0, 0);
   return d;
-}
-
-function accentOf(status) {
-  if (status === "approved") return "approved";
-  if (status === "submitted") return "submitted";
-  if (status === "missed" || status === "rejected") return "missed";
-  return "pending";
 }
 
 export default async function UpcomingPage({ searchParams }) {
@@ -46,12 +39,30 @@ export default async function UpcomingPage({ searchParams }) {
   const nowTop = (now.getHours() - HOUR_START + now.getMinutes() / 60) * HOUR_HEIGHT;
   const showNowLine = nowTop >= 0 && nowTop <= BODY_HEIGHT;
 
-  const { data: commitments } = await supabase
+  const { data: rawCommitments } = await supabase
     .from("commitments")
-    .select("id, title, frequency, days_of_week, once_date, deadline_time, proof_type")
+    .select("id, title, frequency, days_of_week, once_date, deadline_time, proof_type, money_stake")
     .eq("active", true);
 
-  const ids = (commitments || []).map((c) => c.id);
+  const ids = (rawCommitments || []).map((c) => c.id);
+
+  let partnerCounts = {};
+  if (ids.length > 0) {
+    const { data: partnerRows } = await supabase
+      .from("commitment_partners")
+      .select("commitment_id")
+      .in("commitment_id", ids);
+    for (const r of partnerRows || []) partnerCounts[r.commitment_id] = (partnerCounts[r.commitment_id] || 0) + 1;
+  }
+
+  // Een "simpele taak" (checkbox, geen inzet, geen partner) kan meteen en
+  // zelfstandig afgevinkt worden — een echte commitment moet altijd via de
+  // volle check-in flow (foto + evt. partnergoedkeuring).
+  const commitments = (rawCommitments || []).map((c) => ({
+    ...c,
+    isSimple: c.proof_type === "checkbox" && Number(c.money_stake) === 0 && !partnerCounts[c.id],
+  }));
+
   let checkIns = [];
   if (ids.length > 0) {
     const { data } = await supabase
@@ -94,17 +105,23 @@ export default async function UpcomingPage({ searchParams }) {
 
   const rangeLabel = `${new Date(weekDates[0] + "T12:00:00").toLocaleDateString("nl-BE", { day: "numeric", month: "short" })} – ${new Date(weekDates[6] + "T12:00:00").toLocaleDateString("nl-BE", { day: "numeric", month: "short" })}`;
 
-  // Elke actieve commitment krijgt een blok op zijn deadline-tijdstip, op
-  // elke dag waarop hij aan de beurt is — herhalend of eenmalig maakt voor
-  // de weergave niet uit, iedereen heeft nu eenmaal een concreet tijdstip.
+  // Simpele herhalende gewoontes leven bovenaan in de "gewoontes"-pool
+  // (versleepbaar naar een tijdslot); alles met een geldinzet/partner of
+  // een eenmalig tijdstip krijgt een vast blok in het uren-rooster.
   const itemsByDay = {};
+  const poolByDay = {};
   for (const d of weekDates) {
-    itemsByDay[d] = (commitments || [])
+    const due = commitments
       .filter((c) => isDueOnDate(c, d))
-      .map((c) => ({ commitment: c, status: statusByKey[`${c.id}_${d}`] }))
+      .map((c) => ({ commitment: c, status: statusByKey[`${c.id}_${d}`] }));
+
+    poolByDay[d] = due.filter(({ commitment: c }) => c.isSimple && c.frequency !== "once");
+    itemsByDay[d] = due
+      .filter(({ commitment: c }) => !(c.isSimple && c.frequency !== "once"))
       .sort((a, b) => (a.commitment.deadline_time || "").localeCompare(b.commitment.deadline_time || ""));
   }
-  const totalDue = Object.values(itemsByDay).reduce((sum, arr) => sum + arr.length, 0);
+  const totalDue = Object.values(itemsByDay).reduce((sum, arr) => sum + arr.length, 0)
+    + Object.values(poolByDay).reduce((sum, arr) => sum + arr.length, 0);
 
   const decided = checkIns.filter((c) => ["approved", "missed", "rejected"].includes(c.status));
   const approvedCount = decided.filter((c) => c.status === "approved").length;
@@ -114,7 +131,7 @@ export default async function UpcomingPage({ searchParams }) {
 
   const nowMinutes = now.getHours() * 60 + now.getMinutes();
   const upNext = weekDates
-    .flatMap((d) => itemsByDay[d].map((item) => ({ ...item, date: d })))
+    .flatMap((d) => [...itemsByDay[d], ...poolByDay[d]].map((item) => ({ ...item, date: d })))
     .filter(({ date, commitment }) => {
       if (date > today) return true;
       if (date < today) return false;
@@ -150,94 +167,16 @@ export default async function UpcomingPage({ searchParams }) {
         )}
 
         <div className="cal-layout">
-        <div className="cal-wrap">
-          <div className="cal-grid">
-            {/* Header row */}
-            <div className="cal-corner" />
-            {weekDates.map((d, i) => {
-              const dayNum = Number(d.slice(8, 10));
-              const isToday = d === today;
-              return (
-                <div key={d} className={`cal-header-cell ${isToday ? "today-col" : ""}`}>
-                  <span className="cal-day-label">{DAY_LABELS[i]}</span>
-                  <span className={`cal-day-num ${isToday ? "today" : ""}`}>{dayNum}</span>
-                  <Link href={`/commitments/quick?date=${d}`} className="cal-add-btn" title="Toevoegen op deze dag">
-                    <Plus size={11} strokeWidth={2.5} />
-                  </Link>
-                </div>
-              );
-            })}
-
-            {/* Time axis */}
-            <div className="cal-time-axis" style={{ height: BODY_HEIGHT }}>
-              {Array.from({ length: HOUR_END - HOUR_START }, (_, i) => HOUR_START + i).map((h) => (
-                <span key={h} className="cal-time-label" style={{ top: (h - HOUR_START) * HOUR_HEIGHT }}>
-                  {String(h).padStart(2, "0")}:00
-                </span>
-              ))}
-            </div>
-
-            {/* Day bodies */}
-            {weekDates.map((d) => {
-              const items = itemsByDay[d];
-              const isToday = d === today;
-              return (
-                <div
-                  key={d}
-                  className={`cal-day-body ${isToday ? "today-col" : ""}`}
-                  style={{
-                    height: BODY_HEIGHT,
-                    backgroundSize: `100% ${HOUR_HEIGHT}px`,
-                  }}
-                >
-                  {isToday && showNowLine && (
-                    <div className="cal-now-line" style={{ top: nowTop }}>
-                      <span className="cal-now-dot" />
-                    </div>
-                  )}
-                  {items.map(({ commitment, status }) => {
-                    const [hh, mm] = (commitment.deadline_time || "08:00").split(":").map(Number);
-                    const clampedHour = Math.min(Math.max(hh, HOUR_START), HOUR_END - 1);
-                    const top = (clampedHour - HOUR_START) * HOUR_HEIGHT + (mm / 60) * HOUR_HEIGHT;
-                    const Icon = inferIcon(commitment.title);
-                    return (
-                      <Link
-                        key={commitment.id}
-                        href={`/commitments/${commitment.id}`}
-                        className={`cal-task-block ${accentOf(status)}`}
-                        style={{ top }}
-                      >
-                        <span className="cal-task-time">
-                          <Icon size={9} strokeWidth={2.25} /> {commitment.deadline_time?.slice(0, 5)}
-                        </span>
-                        <span className="cal-task-title">{commitment.title}</span>
-                      </Link>
-                    );
-                  })}
-                  {icloudEventsByDay[d].map((ev, i) => {
-                    const [hh, mm] = ev.time.split(":").map(Number);
-                    const clampedHour = Math.min(Math.max(hh, HOUR_START), HOUR_END - 1);
-                    const top = (clampedHour - HOUR_START) * HOUR_HEIGHT + (mm / 60) * HOUR_HEIGHT;
-                    const height = Math.max(22, (ev.durationMinutes / 60) * HOUR_HEIGHT - 2);
-                    return (
-                      <div
-                        key={`ic-${d}-${i}`}
-                        className="cal-task-block icloud"
-                        style={{ top, height }}
-                        title={ev.calendarName}
-                      >
-                        <span className="cal-task-time">
-                          <Cloud size={9} strokeWidth={2.25} /> {ev.time}
-                        </span>
-                        <span className="cal-task-title">{ev.title}</span>
-                      </div>
-                    );
-                  })}
-                </div>
-              );
-            })}
-          </div>
-        </div>
+        <CalendarBoard
+          userId={user.id}
+          weekDates={weekDates}
+          today={today}
+          nowTop={nowTop}
+          showNowLine={showNowLine}
+          poolByDay={poolByDay}
+          itemsByDay={itemsByDay}
+          icloudEventsByDay={icloudEventsByDay}
+        />
 
         <div className="cal-sidebar">
           <div className="cal-stat-card">

@@ -10,6 +10,7 @@ import {
 import { inferIcon } from "@/lib/icons";
 import { isDueOnDate } from "@/lib/schedule";
 import QuickAddBar from "@/components/QuickAddBar";
+import TaskCheckButton from "@/components/TaskCheckButton";
 import { ListChecks, Coins } from "lucide-react";
 
 const DAY_LABELS = ["ma", "di", "wo", "do", "vr", "za", "zo"];
@@ -50,7 +51,7 @@ const ACTION_ICON = {
 };
 
 // ── Today Row — simple: title + deadline left, action circle right ──
-function TodayRow({ commitment, checkin, stats }) {
+function TodayRow({ commitment, checkin, stats, today }) {
   const status = checkin?.status ?? "pending";
   const accentClass = status === "approved" ? "approved"
     : status === "submitted" ? "submitted"
@@ -58,8 +59,8 @@ function TodayRow({ commitment, checkin, stats }) {
     : "pending";
   const Icon = inferIcon(commitment.title);
 
-  return (
-    <Link href={`/commitments/${commitment.id}`} className="today-card">
+  const body = (
+    <>
       <div className={`today-card-accent ${accentClass}`} />
       <div className="today-row-body">
         <span className="today-row-icon"><Icon size={16} strokeWidth={1.75} /></span>
@@ -83,10 +84,24 @@ function TodayRow({ commitment, checkin, stats }) {
             {(status === "missed" || status === "rejected") && <span>Gemist</span>}
           </div>
         </div>
-        <div className={`today-row-action ${accentClass}`}>
-          {ACTION_ICON[accentClass]}
+        <div className={`today-row-action ${accentClass} ${commitment.isSimple ? "simple" : ""}`}>
+          {status === "approved" ? <Check size={20} strokeWidth={2.5} /> : (commitment.isSimple ? null : ACTION_ICON[accentClass])}
         </div>
       </div>
+    </>
+  );
+
+  if (commitment.isSimple) {
+    return (
+      <TaskCheckButton commitmentId={commitment.id} date={today} status={status} className="today-card">
+        {body}
+      </TaskCheckButton>
+    );
+  }
+
+  return (
+    <Link href={`/commitments/${commitment.id}`} className="today-card">
+      {body}
     </Link>
   );
 }
@@ -197,11 +212,27 @@ export default async function DashboardPage() {
 
   const firstName = (profile?.display_name || user.email?.split("@")[0] || "jij").split(" ")[0];
 
-  const { data: commitments, error } = await supabase
+  const { data: rawCommitments, error } = await supabase
     .from("commitments")
     .select("*")
     .eq("active", true)
     .order("created_at", { ascending: false });
+
+  const commitmentIds = (rawCommitments || []).map((c) => c.id);
+  let partnerCounts = {};
+  if (commitmentIds.length > 0) {
+    const { data: partnerRows } = await supabase
+      .from("commitment_partners")
+      .select("commitment_id")
+      .in("commitment_id", commitmentIds);
+    for (const r of partnerRows || []) partnerCounts[r.commitment_id] = (partnerCounts[r.commitment_id] || 0) + 1;
+  }
+  const commitments = (rawCommitments || []).map((c) => ({
+    ...c,
+    isSimple: c.proof_type === "checkbox" && Number(c.money_stake) === 0 && !partnerCounts[c.id],
+  }));
+
+  const todayStr = new Date().toISOString().slice(0, 10);
 
   const rows = [];
   for (const c of commitments || []) {
@@ -312,7 +343,7 @@ export default async function DashboardPage() {
         )}
 
         {rows.map(({ commitment, checkin, stats }) => (
-          <TodayRow key={commitment.id} commitment={commitment} checkin={checkin} stats={stats} />
+          <TodayRow key={commitment.id} commitment={commitment} checkin={checkin} stats={stats} today={todayStr} />
         ))}
 
         {hasAnyCommitments && (

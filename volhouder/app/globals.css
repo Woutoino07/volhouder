@@ -1346,7 +1346,7 @@ textarea {
   }
 
   .shell-wide {
-    max-width: 1120px;
+    max-width: 1480px;
   }
 
   .card {
@@ -1359,7 +1359,7 @@ textarea {
   }
 
   .fab.wide {
-    right: max(24px, calc((100vw - var(--sidebar-width) - 1120px) / 2 + 24px));
+    right: max(24px, calc((100vw - var(--sidebar-width) - 1480px) / 2 + 24px));
   }
 }
 
@@ -1985,6 +1985,11 @@ textarea {
   color: #fff;
   box-shadow: 0 4px 14px rgba(15,31,61,0.3);
 }
+.today-row-action.pending.simple {
+  background: none;
+  border: 2px solid var(--border-strong);
+  box-shadow: none;
+}
 .today-row-action.submitted {
   background: var(--accent-light);
   color: var(--accent);
@@ -2232,8 +2237,8 @@ textarea {
 }
 .cal-grid {
   display: grid;
-  grid-template-columns: 52px repeat(7, minmax(104px, 1fr));
-  min-width: 780px;
+  grid-template-columns: 56px repeat(7, minmax(140px, 1fr));
+  min-width: 1040px;
 }
 .cal-corner {
   border-bottom: 1px solid var(--border);
@@ -2286,6 +2291,82 @@ textarea {
   background: var(--danger);
   color: #fff;
 }
+
+/* Gewoontes-pool bovenaan elke dag — versleepbaar naar een tijdslot */
+.cal-allday-label {
+  font-size: 10px;
+  font-weight: 700;
+  color: var(--muted-light);
+  padding: 8px 6px;
+  border-bottom: 1px solid var(--border);
+  border-right: 1px solid var(--border);
+}
+.cal-allday-cell {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 8px 5px;
+  border-bottom: 1px solid var(--border);
+  border-right: 1px solid var(--border);
+  min-height: 40px;
+}
+.cal-allday-empty {
+  font-size: 10px;
+  color: var(--muted-light);
+  padding: 4px 2px;
+}
+.cal-chip {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 10.5px;
+  font-weight: 600;
+  padding: 4px 5px;
+  border-radius: 7px;
+  background: var(--accent-light);
+  color: var(--navy);
+  border-left: 2.5px solid var(--navy);
+  touch-action: none;
+}
+.cal-chip.done {
+  background: var(--success-bg);
+  color: var(--success);
+  border-left-color: var(--success);
+  opacity: 0.75;
+}
+.cal-chip-drag {
+  display: flex;
+  cursor: grab;
+  flex-shrink: 0;
+}
+.cal-chip-title {
+  flex: 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.cal-chip-check {
+  width: 14px;
+  height: 14px;
+  flex-shrink: 0;
+  border-radius: 4px;
+  border: 1.5px solid currentColor;
+  background: none;
+  color: inherit;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  padding: 0;
+}
+
+.cal-drop-slot {
+  position: absolute;
+  left: 0;
+  right: 0;
+  z-index: 0;
+}
+
 .cal-time-axis {
   position: relative;
   border-right: 1px solid var(--border);
@@ -2322,7 +2403,18 @@ textarea {
   overflow: hidden;
   border-left: 3px solid transparent;
   box-shadow: 0 1px 4px rgba(15,31,61,0.08);
+  z-index: 1;
 }
+button.cal-task-block {
+  border: none;
+  border-left: 3px solid transparent;
+  font-family: inherit;
+  text-align: left;
+  cursor: pointer;
+  width: auto;
+}
+.cal-task-block.simple.pending { background: var(--glass-bg); color: var(--text-primary); border-left-color: var(--muted-light); }
+.cal-task-block.simple.done { background: var(--success-bg); color: var(--success); border-left-color: var(--success); opacity: 0.8; }
 .cal-now-line {
   position: absolute;
   left: 0;
