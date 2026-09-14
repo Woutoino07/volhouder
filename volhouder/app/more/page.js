@@ -1,29 +1,13 @@
 import Link from "next/link";
 import Nav from "@/components/Nav";
 import { createClient } from "@/lib/supabase/server";
-import { CheckSquare, CreditCard, User, ChevronRight } from "lucide-react";
+import { CreditCard, User, ChevronRight } from "lucide-react";
 
 export default async function MorePage() {
   const supabase = createClient();
   const {
     data: { user },
   } = await supabase.auth.getUser();
-
-  const { data: myPartnerCommitments } = await supabase
-    .from("commitment_partners")
-    .select("commitment_id")
-    .eq("profile_id", user.id);
-  const partnerCommitmentIds = (myPartnerCommitments || []).map((r) => r.commitment_id);
-
-  let pendingReviewCount = 0;
-  if (partnerCommitmentIds.length > 0) {
-    const { count } = await supabase
-      .from("check_ins")
-      .select("id", { count: "exact", head: true })
-      .eq("status", "submitted")
-      .in("commitment_id", partnerCommitmentIds);
-    pendingReviewCount = count || 0;
-  }
 
   const { data: openDebts } = await supabase
     .from("ledger_entries")
@@ -36,13 +20,6 @@ export default async function MorePage() {
     .reduce((sum, d) => sum + Number(d.amount), 0);
 
   const items = [
-    {
-      href: "/review",
-      icon: <CheckSquare size={18} strokeWidth={1.75} />,
-      label: "Beoordeel",
-      sub: pendingReviewCount > 0 ? `${pendingReviewCount} wachten op jou` : "Niets openstaand",
-      badge: pendingReviewCount,
-    },
     {
       href: "/ledger",
       icon: <CreditCard size={18} strokeWidth={1.75} />,
@@ -59,7 +36,7 @@ export default async function MorePage() {
 
   return (
     <>
-      <Nav pendingReviewCount={pendingReviewCount} />
+      <Nav />
       <div className="shell">
         <div className="dashboard-header">
           <div className="dashboard-greeting">Meer</div>
@@ -92,15 +69,6 @@ export default async function MorePage() {
                 <div style={{ fontWeight: 700, fontSize: 15, color: "var(--black)" }}>{item.label}</div>
                 <div style={{ fontSize: 12, color: "var(--muted)", marginTop: 1 }}>{item.sub}</div>
               </span>
-              {item.badge > 0 && (
-                <span style={{
-                  background: "var(--danger)", color: "#fff", fontSize: 11, fontWeight: 700,
-                  minWidth: 18, height: 18, borderRadius: 999, display: "flex",
-                  alignItems: "center", justifyContent: "center", padding: "0 5px",
-                }}>
-                  {item.badge}
-                </span>
-              )}
               <ChevronRight size={16} strokeWidth={2} style={{ color: "var(--muted-light)", flexShrink: 0 }} />
             </Link>
           ))}

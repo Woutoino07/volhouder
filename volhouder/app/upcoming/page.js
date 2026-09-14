@@ -2,7 +2,8 @@ import Link from "next/link";
 import Nav from "@/components/Nav";
 import { createClient } from "@/lib/supabase/server";
 import { isDueOnDate } from "@/lib/schedule";
-import { ChevronLeft, ChevronRight } from "lucide-react";
+import { inferIcon } from "@/lib/icons";
+import { ChevronLeft, ChevronRight, Plus } from "lucide-react";
 
 const DAY_LABELS = ["ma", "di", "wo", "do", "vr", "za", "zo"];
 const HOUR_START = 6;
@@ -26,6 +27,11 @@ function accentOf(status) {
   return "pending";
 }
 
+function ChipIcon({ title }) {
+  const Icon = inferIcon(title);
+  return <Icon size={10} strokeWidth={2.25} style={{ flexShrink: 0 }} />;
+}
+
 export default async function UpcomingPage({ searchParams }) {
   const offset = parseInt(searchParams?.week || "0", 10) || 0;
 
@@ -39,7 +45,10 @@ export default async function UpcomingPage({ searchParams }) {
     d.setDate(monday.getDate() + i);
     return d.toISOString().slice(0, 10);
   });
-  const today = new Date().toISOString().slice(0, 10);
+  const now = new Date();
+  const today = now.toISOString().slice(0, 10);
+  const nowTop = (now.getHours() - HOUR_START + now.getMinutes() / 60) * HOUR_HEIGHT;
+  const showNowLine = nowTop >= 0 && nowTop <= BODY_HEIGHT;
 
   const { data: commitments } = await supabase
     .from("commitments")
@@ -76,6 +85,7 @@ export default async function UpcomingPage({ searchParams }) {
           </div>
           <div style={{ display: "flex", gap: 4 }}>
             <Link href={`/upcoming?week=${offset - 1}`} className="cal-nav-btn"><ChevronLeft size={16} strokeWidth={2} /></Link>
+            {offset !== 0 && <Link href="/upcoming" className="cal-nav-btn" style={{ width: "auto", padding: "0 10px", fontSize: 11, fontWeight: 700 }}>Nu</Link>}
             <Link href={`/upcoming?week=${offset + 1}`} className="cal-nav-btn"><ChevronRight size={16} strokeWidth={2} /></Link>
           </div>
         </div>
@@ -88,9 +98,12 @@ export default async function UpcomingPage({ searchParams }) {
               const dayNum = Number(d.slice(8, 10));
               const isToday = d === today;
               return (
-                <div key={d} className="cal-header-cell">
+                <div key={d} className={`cal-header-cell ${isToday ? "today-col" : ""}`}>
                   <span className="cal-day-label">{DAY_LABELS[i]}</span>
                   <span className={`cal-day-num ${isToday ? "today" : ""}`}>{dayNum}</span>
+                  <Link href={`/commitments/new?date=${d}`} className="cal-add-btn" title="Toevoegen op deze dag">
+                    <Plus size={11} strokeWidth={2.5} />
+                  </Link>
                 </div>
               );
             })}
@@ -99,13 +112,15 @@ export default async function UpcomingPage({ searchParams }) {
             <div className="cal-allday-label">Gewoontes</div>
             {weekDates.map((d) => {
               const dueHabits = habits.filter((h) => isDueOnDate(h, d));
+              const isToday = d === today;
               return (
-                <div key={d} className="cal-allday-cell">
+                <div key={d} className={`cal-allday-cell ${isToday ? "today-col" : ""}`}>
                   {dueHabits.map((h) => {
                     const status = statusByKey[`${h.id}_${d}`];
                     return (
                       <Link key={h.id} href={`/commitments/${h.id}`} className={`cal-chip ${accentOf(status)}`}>
-                        {h.title}
+                        <ChipIcon title={h.title} />
+                        <span style={{ overflow: "hidden", textOverflow: "ellipsis" }}>{h.title}</span>
                       </Link>
                     );
                   })}
@@ -125,20 +140,27 @@ export default async function UpcomingPage({ searchParams }) {
             {/* Day bodies */}
             {weekDates.map((d) => {
               const dueTasks = tasks.filter((t) => t.once_date === d);
+              const isToday = d === today;
               return (
                 <div
                   key={d}
-                  className="cal-day-body"
+                  className={`cal-day-body ${isToday ? "today-col" : ""}`}
                   style={{
                     height: BODY_HEIGHT,
                     backgroundSize: `100% ${HOUR_HEIGHT}px`,
                   }}
                 >
+                  {isToday && showNowLine && (
+                    <div className="cal-now-line" style={{ top: nowTop }}>
+                      <span className="cal-now-dot" />
+                    </div>
+                  )}
                   {dueTasks.map((t) => {
                     const [hh, mm] = (t.deadline_time || "08:00").split(":").map(Number);
                     const clampedHour = Math.min(Math.max(hh, HOUR_START), HOUR_END - 1);
                     const top = (clampedHour - HOUR_START) * HOUR_HEIGHT + (mm / 60) * HOUR_HEIGHT;
                     const status = statusByKey[`${t.id}_${d}`];
+                    const Icon = inferIcon(t.title);
                     return (
                       <Link
                         key={t.id}
@@ -146,7 +168,9 @@ export default async function UpcomingPage({ searchParams }) {
                         className={`cal-task-block ${accentOf(status)}`}
                         style={{ top }}
                       >
-                        <span className="cal-task-time">{t.deadline_time?.slice(0, 5)}</span>
+                        <span className="cal-task-time">
+                          <Icon size={9} strokeWidth={2.25} /> {t.deadline_time?.slice(0, 5)}
+                        </span>
                         <span className="cal-task-title">{t.title}</span>
                       </Link>
                     );
@@ -157,6 +181,10 @@ export default async function UpcomingPage({ searchParams }) {
           </div>
         </div>
       </div>
+
+      <Link href="/commitments/new" className="fab" title="Nieuwe commitment">
+        <Plus size={22} strokeWidth={2} />
+      </Link>
     </>
   );
 }

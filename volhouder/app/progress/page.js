@@ -11,7 +11,8 @@ import {
   commitmentRanking,
   habitWeekGrid,
 } from "@/lib/progress";
-import { TrendingUp, Coins, Clock, Scale, Trophy, Repeat, Flame } from "lucide-react";
+import { TrendingUp, Coins, Clock, Scale, Trophy, Flame } from "lucide-react";
+import { inferIcon } from "@/lib/icons";
 
 const WEEKDAY_LETTERS = ["M", "D", "W", "D", "V", "Z", "Z"];
 
@@ -19,11 +20,12 @@ function HabitCard({ commitment, checkIns }) {
   const history = checkIns.filter((c) => c.commitment_id === commitment.id);
   const stats = computeStats(history);
   const grid = habitWeekGrid(checkIns, commitment.id, 4);
+  const Icon = inferIcon(commitment.title);
 
   return (
     <div className="habit-card">
       <div className="habit-card-header">
-        <span className="habit-card-icon"><Repeat size={13} strokeWidth={2} /></span>
+        <span className="habit-card-icon"><Icon size={13} strokeWidth={2} /></span>
         <span className="habit-card-title">{commitment.title}</span>
       </div>
 

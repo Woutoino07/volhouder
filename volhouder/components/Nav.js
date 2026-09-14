@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Home, CalendarDays, TrendingUp, MoreHorizontal, Target } from "lucide-react";
+import { Home, CalendarDays, TrendingUp, MoreHorizontal, Target, CheckSquare } from "lucide-react";
 
 export default function Nav({ pendingReviewCount = 0 }) {
   const pathname = usePathname();
@@ -15,8 +15,9 @@ export default function Nav({ pendingReviewCount = 0 }) {
   const navItems = [
     { href: "/", icon: <Home size={20} strokeWidth={1.75} />, label: "Home" },
     { href: "/upcoming", icon: <CalendarDays size={20} strokeWidth={1.75} />, label: "Aankomend" },
+    { href: "/review", icon: <CheckSquare size={20} strokeWidth={1.75} />, label: "Beoordeel", badge: pendingReviewCount },
     { href: "/progress", icon: <TrendingUp size={20} strokeWidth={1.75} />, label: "Inzichten" },
-    { href: "/more", icon: <MoreHorizontal size={20} strokeWidth={1.75} />, label: "Meer", badge: pendingReviewCount },
+    { href: "/more", icon: <MoreHorizontal size={20} strokeWidth={1.75} />, label: "Meer" },
   ];
 
   return (

@@ -289,7 +289,7 @@ nav.bottom-nav a,
   flex-direction: column;
   align-items: center;
   gap: 3px;
-  padding: 6px 16px;
+  padding: 6px 6px;
   border-radius: 12px;
   text-decoration: none;
   color: var(--muted);
@@ -1757,6 +1757,17 @@ textarea {
   align-items: center;
   gap: 14px;
 }
+.today-row-icon {
+  width: 34px;
+  height: 34px;
+  border-radius: 10px;
+  background: var(--accent-light);
+  color: var(--navy);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
 .today-row-info {
   flex: 1;
   min-width: 0;
@@ -1944,6 +1955,7 @@ textarea {
   border-right: 1px solid var(--border);
 }
 .cal-header-cell {
+  position: relative;
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -1952,6 +1964,21 @@ textarea {
   border-bottom: 1px solid var(--border);
   border-right: 1px solid var(--border);
 }
+.cal-add-btn {
+  position: absolute;
+  top: 6px;
+  right: 6px;
+  width: 16px;
+  height: 16px;
+  border-radius: 5px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--accent-light);
+  color: var(--navy);
+  opacity: 0.7;
+}
+.today-col { background: rgba(37, 99, 235, 0.04); }
 .cal-day-label {
   font-size: 10px;
   font-weight: 700;
@@ -1993,14 +2020,15 @@ textarea {
   min-height: 34px;
 }
 .cal-chip {
-  display: block;
+  display: flex;
+  align-items: center;
+  gap: 4px;
   font-size: 10px;
   font-weight: 600;
   padding: 3px 6px;
   border-radius: 6px;
   text-decoration: none;
   overflow: hidden;
-  text-overflow: ellipsis;
   white-space: nowrap;
   border-left: 2.5px solid transparent;
 }
@@ -2046,10 +2074,30 @@ textarea {
   border-left: 3px solid transparent;
   box-shadow: 0 1px 4px rgba(15,31,61,0.08);
 }
+.cal-now-line {
+  position: absolute;
+  left: 0;
+  right: 0;
+  height: 0;
+  border-top: 1.5px solid var(--danger);
+  z-index: 2;
+}
+.cal-now-dot {
+  position: absolute;
+  left: -3px;
+  top: -4px;
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--danger);
+}
 .cal-task-time {
   font-size: 9px;
   font-weight: 700;
   opacity: 0.85;
+  display: flex;
+  align-items: center;
+  gap: 3px;
 }
 .cal-task-title {
   font-size: 11px;

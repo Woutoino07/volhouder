@@ -62,7 +62,7 @@ export default async function ReviewPage() {
 
   return (
     <>
-      <Nav />
+      <Nav pendingReviewCount={pending.length} />
       <div className="shell">
         <div className="page-header">
           <h1>Beoordelen</h1>

@@ -7,6 +7,7 @@ import { computeStats } from "@/lib/stats";
 import {
   Flame, Clock, Plus, Target, Camera, Check, X, AlertCircle, CalendarDays,
 } from "lucide-react";
+import { inferIcon } from "@/lib/icons";
 
 function getGreeting() {
   const h = new Date().getHours();
@@ -41,11 +42,13 @@ function TodayRow({ commitment, checkin, stats }) {
     : status === "submitted" ? "submitted"
     : (status === "missed" || status === "rejected") ? "missed"
     : "pending";
+  const Icon = inferIcon(commitment.title);
 
   return (
     <Link href={`/commitments/${commitment.id}`} className="today-card">
       <div className={`today-card-accent ${accentClass}`} />
       <div className="today-row-body">
+        <span className="today-row-icon"><Icon size={16} strokeWidth={1.75} /></span>
         <div className="today-row-info">
           <div className="today-row-title">{commitment.title}</div>
           <div className="today-row-meta">
@@ -71,6 +74,39 @@ function TodayRow({ commitment, checkin, stats }) {
         </div>
       </div>
     </Link>
+  );
+}
+
+// ── Progress ring — X/Y voltooid vandaag ───────────
+function ProgressRing({ done, total }) {
+  const size = 52;
+  const stroke = 5;
+  const r = (size - stroke) / 2;
+  const circumference = 2 * Math.PI * r;
+  const pct = total > 0 ? done / total : 0;
+  const offset = circumference * (1 - pct);
+
+  return (
+    <div style={{ position: "relative", width: size, height: size, flexShrink: 0 }}>
+      <svg width={size} height={size} style={{ transform: "rotate(-90deg)" }}>
+        <circle cx={size / 2} cy={size / 2} r={r} fill="none" stroke="var(--border)" strokeWidth={stroke} />
+        <circle
+          cx={size / 2} cy={size / 2} r={r} fill="none"
+          stroke={pct >= 1 ? "var(--success)" : "var(--navy)"}
+          strokeWidth={stroke}
+          strokeLinecap="round"
+          strokeDasharray={circumference}
+          strokeDashoffset={offset}
+          style={{ transition: "stroke-dashoffset 0.3s" }}
+        />
+      </svg>
+      <div style={{
+        position: "absolute", inset: 0, display: "flex", flexDirection: "column",
+        alignItems: "center", justifyContent: "center",
+      }}>
+        <span style={{ fontSize: 13, fontWeight: 800, color: "var(--black)", lineHeight: 1 }}>{done}/{total}</span>
+      </div>
+    </div>
   );
 }
 
@@ -142,14 +178,18 @@ export default async function DashboardPage() {
     .reduce((sum, d) => sum + Number(d.amount), 0);
 
   const hasAnyCommitments = (commitments || []).length > 0;
+  const doneToday = rows.filter((r) => r.checkin?.status === "approved").length;
 
   return (
     <>
       <Nav pendingReviewCount={pendingReviewCount} />
       <div className="shell">
-        <div className="dashboard-header">
-          <div className="dashboard-greeting">{getGreeting()}, {firstName}</div>
-          <div className="dashboard-date">{capitalize(getFullDate())}</div>
+        <div className="dashboard-header" style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+          <div>
+            <div className="dashboard-greeting">{getGreeting()}, {firstName}</div>
+            <div className="dashboard-date">{capitalize(getFullDate())}</div>
+          </div>
+          {rows.length > 0 && <ProgressRing done={doneToday} total={rows.length} />}
         </div>
 
         <NotificationSetup />

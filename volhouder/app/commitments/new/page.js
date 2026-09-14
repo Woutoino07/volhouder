@@ -1,7 +1,7 @@
 "use client";
 
-import { useState } from "react";
-import { useRouter } from "next/navigation";
+import { Suspense, useState } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import Nav from "@/components/Nav";
 import Link from "next/link";
@@ -29,14 +29,25 @@ const FREQ_OPTIONS = [
 ];
 
 export default function NewCommitmentPage() {
+  return (
+    <Suspense fallback={null}>
+      <NewCommitmentForm />
+    </Suspense>
+  );
+}
+
+function NewCommitmentForm() {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const supabase = createClient();
+
+  const prefillDate = searchParams.get("date") || "";
 
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
-  const [frequency, setFrequency] = useState("daily");
+  const [frequency, setFrequency] = useState(prefillDate ? "once" : "daily");
   const [daysOfWeek, setDaysOfWeek] = useState([1, 2, 3, 4, 5]);
-  const [onceDate, setOnceDate] = useState("");
+  const [onceDate, setOnceDate] = useState(prefillDate);
   const [deadlineTime, setDeadlineTime] = useState("06:45");
   const [proofType, setProofType] = useState("photo");
   const [moneyStake, setMoneyStake] = useState("5");
