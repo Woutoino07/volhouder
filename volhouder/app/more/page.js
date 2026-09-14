@@ -25,14 +25,21 @@ export default async function MorePage() {
       icon: <CreditCard size={18} strokeWidth={1.75} />,
       label: "Schulden",
       sub: owedByMe > 0 ? `Jij bent €${owedByMe.toFixed(2)} verschuldigd` : "Niets openstaand",
+      tint: owedByMe > 0 ? "warning" : "accent",
     },
     {
       href: "/account",
       icon: <User size={18} strokeWidth={1.75} />,
       label: "Account",
       sub: "Profiel & online betalen",
+      tint: "accent",
     },
   ];
+
+  const TINTS = {
+    accent: { bg: "var(--accent-light)", color: "var(--navy)" },
+    warning: { bg: "var(--warning-bg)", color: "var(--warning)" },
+  };
 
   return (
     <>
@@ -51,15 +58,15 @@ export default async function MorePage() {
                 display: "flex",
                 alignItems: "center",
                 gap: 14,
-                padding: "16px 18px",
+                padding: "18px 20px",
                 textDecoration: "none",
                 color: "inherit",
                 borderBottom: i < items.length - 1 ? "1px solid var(--border)" : "none",
               }}
             >
               <span style={{
-                width: 36, height: 36, borderRadius: 10,
-                background: "var(--accent-light)", color: "var(--navy)",
+                width: 38, height: 38, borderRadius: 11,
+                background: TINTS[item.tint].bg, color: TINTS[item.tint].color,
                 display: "flex", alignItems: "center", justifyContent: "center",
                 flexShrink: 0,
               }}>

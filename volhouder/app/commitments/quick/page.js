@@ -105,7 +105,7 @@ function QuickTaskForm() {
             </div>
           </div>
 
-          <button type="submit" disabled={loading} className="btn-full" style={{ width: "100%", padding: "14px", fontSize: 15, borderRadius: "var(--radius)", marginBottom: 16 }}>
+          <button type="submit" disabled={loading} className="btn-full" style={{ width: "100%", padding: "14px", fontSize: 15, borderRadius: "var(--radius-pill)", marginBottom: 16 }}>
             {loading ? "Bezig..." : "Toevoegen aan kalender"}
           </button>
 

@@ -5,13 +5,13 @@ import { createClient } from "@/lib/supabase/server";
 import { cleanupOldPhotos } from "@/lib/cleanupOldPhotos";
 import { computeStats } from "@/lib/stats";
 import {
-  Flame, Clock, Plus, Target, Camera, Check, X, AlertCircle, ChevronRight,
+  Flame, Clock, Plus, Target, Camera, Check, X, ChevronRight,
 } from "lucide-react";
 import { inferIcon } from "@/lib/icons";
 import { isDueOnDate } from "@/lib/schedule";
 import QuickAddBar from "@/components/QuickAddBar";
 import TaskCheckButton from "@/components/TaskCheckButton";
-import { ListChecks, Coins } from "lucide-react";
+import { ListChecks, Coins, CreditCard, TrendingUp } from "lucide-react";
 
 const DAY_LABELS = ["ma", "di", "wo", "do", "vr", "za", "zo"];
 
@@ -177,20 +177,54 @@ function WeekPreview({ commitments }) {
 // ── Stat tiles — snelle context onder de quick-add ─
 function StatTiles({ activeCount, bestStreak, moneyAtStake }) {
   const tiles = [
-    { icon: ListChecks, label: "Actief", value: activeCount },
-    { icon: Flame, label: "Beste streak", value: bestStreak },
-    { icon: Coins, label: "Inzet vandaag", value: `€${moneyAtStake.toFixed(0)}` },
+    { icon: ListChecks, label: "Actief", value: activeCount, tint: "accent" },
+    { icon: Flame, label: "Beste streak", value: bestStreak, tint: "warning" },
+    { icon: Coins, label: "Inzet vandaag", value: `€${moneyAtStake.toFixed(0)}`, tint: "success" },
   ];
   return (
     <div className="stat-tile-row">
-      {tiles.map(({ icon: Icon, label, value }) => (
+      {tiles.map(({ icon: Icon, label, value, tint }) => (
         <div key={label} className="stat-tile">
-          <Icon size={14} strokeWidth={2} />
+          <span className={`stat-tile-icon ${tint}`}><Icon size={16} strokeWidth={2} /></span>
           <span className="stat-tile-value">{value}</span>
           <span className="stat-tile-label">{label}</span>
         </div>
       ))}
     </div>
+  );
+}
+
+// ── Rechterkolom-widgets ────────────────────────────
+function LedgerWidget({ owedByMe }) {
+  return (
+    <Link href="/ledger" className="cal-stat-card">
+      <div className="cal-stat-header">
+        <CreditCard size={14} strokeWidth={2} color="var(--navy)" />
+        <span>Schulden</span>
+      </div>
+      {owedByMe > 0 ? (
+        <>
+          <div className="cal-stat-rate" style={{ color: "var(--danger)" }}>€{owedByMe.toFixed(2)}</div>
+          <p style={{ fontSize: 12, color: "var(--muted)", margin: 0 }}>Nog te betalen aan je partner(s)</p>
+        </>
+      ) : (
+        <p style={{ fontSize: 12, color: "var(--muted)", margin: 0 }}>Niets openstaand — helemaal bij.</p>
+      )}
+    </Link>
+  );
+}
+
+function InsightsTeaser() {
+  return (
+    <Link href="/progress" className="cal-stat-card">
+      <div className="cal-stat-header">
+        <TrendingUp size={14} strokeWidth={2} color="var(--navy)" />
+        <span>Inzichten</span>
+      </div>
+      <p style={{ fontSize: 12, color: "var(--muted)", margin: 0 }}>
+        Bekijk je slaagpercentage, gewoonte-grids en kost van missen.
+      </p>
+    </Link>
   );
 }
 
@@ -294,63 +328,60 @@ export default async function DashboardPage() {
           {rows.length > 0 && <ProgressRing done={doneToday} total={rows.length} />}
         </div>
 
-        {hasAnyCommitments && (
-          <>
-            <QuickAddBar />
-            <StatTiles activeCount={commitments.length} bestStreak={bestStreak} moneyAtStake={moneyAtStake} />
-          </>
-        )}
-
         <NotificationSetup />
 
         {error && <div className="error-box">{error.message}</div>}
 
-        {owedByMe > 0 && (
-          <Link href="/ledger" className="debt-banner">
-            <span style={{ display: "inline-flex", alignItems: "center", gap: 7 }}>
-              <AlertCircle size={15} strokeWidth={2} style={{ flexShrink: 0 }} />
-              Je bent €{owedByMe.toFixed(2)} verschuldigd
-            </span>
-          </Link>
-        )}
+        <div className="page-layout">
+          <div className="page-main">
+            {hasAnyCommitments && (
+              <>
+                <QuickAddBar />
+                <StatTiles activeCount={commitments.length} bestStreak={bestStreak} moneyAtStake={moneyAtStake} />
+              </>
+            )}
 
-        {!hasAnyCommitments && (
-          <div className="card">
-            <div className="empty-state">
-              <div className="empty-state-icon">
-                <Target size={24} strokeWidth={1.75} />
+            {!hasAnyCommitments && (
+              <div className="card">
+                <div className="empty-state">
+                  <div className="empty-state-icon">
+                    <Target size={24} strokeWidth={1.75} />
+                  </div>
+                  <h3>Start je eerste commitment</h3>
+                  <p>Kies iets dat je wil volhouden. Een gewoonte, een doel, een belofte aan jezelf.</p>
+                  <Link href="/commitments/new" className="btn">Begin nu</Link>
+                </div>
               </div>
-              <h3>Start je eerste commitment</h3>
-              <p>Kies iets dat je wil volhouden. Een gewoonte, een doel, een belofte aan jezelf.</p>
-              <Link href="/commitments/new" className="btn">Begin nu</Link>
+            )}
+
+            {hasAnyCommitments && rows.length === 0 && (
+              <div style={{
+                background: "var(--glass-bg)",
+                border: "1px solid var(--glass-border)",
+                borderRadius: "var(--radius)",
+                padding: "36px 20px",
+                textAlign: "center",
+                color: "var(--muted)",
+                fontSize: 14,
+                boxShadow: "var(--glass-shadow)",
+              }}>
+                Niets vandaag — geniet ervan.
+              </div>
+            )}
+
+            {rows.map(({ commitment, checkin, stats }) => (
+              <TodayRow key={commitment.id} commitment={commitment} checkin={checkin} stats={stats} today={todayStr} />
+            ))}
+          </div>
+
+          {hasAnyCommitments && (
+            <div className="page-aside">
+              <WeekPreview commitments={commitments} />
+              <LedgerWidget owedByMe={owedByMe} />
+              <InsightsTeaser />
             </div>
-          </div>
-        )}
-
-        {hasAnyCommitments && rows.length === 0 && (
-          <div style={{
-            background: "var(--glass-bg)",
-            border: "1px solid var(--glass-border)",
-            borderRadius: "var(--radius)",
-            padding: "36px 20px",
-            textAlign: "center",
-            color: "var(--muted)",
-            fontSize: 14,
-            boxShadow: "var(--glass-shadow)",
-          }}>
-            Niets vandaag — geniet ervan.
-          </div>
-        )}
-
-        {rows.map(({ commitment, checkin, stats }) => (
-          <TodayRow key={commitment.id} commitment={commitment} checkin={checkin} stats={stats} today={todayStr} />
-        ))}
-
-        {hasAnyCommitments && (
-          <div style={{ marginTop: 20 }}>
-            <WeekPreview commitments={commitments} />
-          </div>
-        )}
+          )}
+        </div>
       </div>
 
       <Link href="/commitments/new" className="fab" title="Nieuwe commitment">

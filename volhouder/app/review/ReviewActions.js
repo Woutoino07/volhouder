@@ -41,20 +41,20 @@ export default function ReviewActions({ checkinId }) {
           onChange={(e) => setReason(e.target.value)}
           placeholder="Reden voor afkeuring..."
           rows={2}
-          style={{ fontSize: 13, padding: "8px 10px", borderRadius: "var(--radius)", border: "1px solid var(--border)", background: "var(--glass-bg-strong)", color: "var(--text-primary)", resize: "none", fontFamily: "inherit" }}
+          style={{ fontSize: 13, padding: "8px 10px", borderRadius: "var(--radius-sm)", border: "1px solid var(--border)", background: "var(--glass-bg-strong)", color: "var(--text-primary)", resize: "none", fontFamily: "inherit" }}
           autoFocus
         />
         <div style={{ display: "flex", gap: 6 }}>
           <button
             onClick={handleReject}
             disabled={loading || !reason.trim()}
-            style={{ flex: 1, padding: "8px", fontSize: 13, borderRadius: "var(--radius)", background: "var(--danger)", color: "#fff", border: "none", cursor: "pointer", opacity: loading || !reason.trim() ? 0.6 : 1 }}
+            style={{ flex: 1, padding: "8px", fontSize: 13, borderRadius: "var(--radius-pill)", background: "var(--danger)", color: "#fff", border: "none", cursor: "pointer", opacity: loading || !reason.trim() ? 0.6 : 1 }}
           >
             Bevestig afkeuring
           </button>
           <button
             onClick={() => { setRejecting(false); setReason(""); }}
-            style={{ padding: "8px 12px", fontSize: 13, borderRadius: "var(--radius)", background: "var(--bg-secondary)", color: "var(--text-primary)", border: "1px solid var(--border)", cursor: "pointer" }}
+            style={{ padding: "8px 12px", fontSize: 13, borderRadius: "var(--radius-pill)", background: "var(--glass-bg-strong)", color: "var(--text-primary)", border: "1px solid var(--border)", cursor: "pointer" }}
           >
             Annuleer
           </button>
@@ -68,7 +68,7 @@ export default function ReviewActions({ checkinId }) {
       <button
         onClick={handleApprove}
         disabled={loading}
-        style={{ flex: 1, display: "flex", alignItems: "center", justifyContent: "center", gap: 5, padding: "8px", fontSize: 13, borderRadius: "var(--radius)", background: "var(--success)", color: "#fff", border: "none", cursor: "pointer", opacity: loading ? 0.6 : 1 }}
+        style={{ flex: 1, display: "flex", alignItems: "center", justifyContent: "center", gap: 5, padding: "8px", fontSize: 13, borderRadius: "var(--radius-pill)", background: "var(--success)", color: "#fff", border: "none", cursor: "pointer", opacity: loading ? 0.6 : 1 }}
       >
         <CheckCircle2 size={14} strokeWidth={1.75} />
         Nu goedkeuren
@@ -76,7 +76,7 @@ export default function ReviewActions({ checkinId }) {
       <button
         onClick={() => setRejecting(true)}
         disabled={loading}
-        style={{ flex: 1, display: "flex", alignItems: "center", justifyContent: "center", gap: 5, padding: "8px", fontSize: 13, borderRadius: "var(--radius)", background: "transparent", color: "var(--danger)", border: "1px solid var(--danger)", cursor: "pointer", opacity: loading ? 0.6 : 1 }}
+        style={{ flex: 1, display: "flex", alignItems: "center", justifyContent: "center", gap: 5, padding: "8px", fontSize: 13, borderRadius: "var(--radius-pill)", background: "transparent", color: "var(--danger)", border: "1px solid var(--danger)", cursor: "pointer", opacity: loading ? 0.6 : 1 }}
       >
         <XCircle size={14} strokeWidth={1.75} />
         Afkeuren

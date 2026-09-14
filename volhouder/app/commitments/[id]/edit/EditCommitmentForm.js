@@ -186,10 +186,10 @@ export default function EditCommitmentForm({ commitment }) {
       </div>
 
       <div style={{ display: "flex", gap: 10, marginBottom: 24 }}>
-        <button type="submit" disabled={loading} className="btn-full" style={{ flex: 1, padding: "14px", fontSize: 15, borderRadius: "var(--radius)" }}>
+        <button type="submit" disabled={loading} className="btn-full" style={{ flex: 1, padding: "14px", fontSize: 15, borderRadius: "var(--radius-pill)" }}>
           {loading ? "Bezig..." : "Wijzigingen opslaan"}
         </button>
-        <Link href={`/commitments/${commitment.id}`} className="btn secondary" style={{ padding: "14px 20px", fontSize: 15, borderRadius: "var(--radius)" }}>
+        <Link href={`/commitments/${commitment.id}`} className="btn secondary" style={{ padding: "14px 20px", fontSize: 15, borderRadius: "var(--radius-pill)" }}>
           Annuleren
         </Link>
       </div>

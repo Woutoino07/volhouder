@@ -28,7 +28,7 @@ export default function SignOutButton() {
           padding: "10px 16px",
           fontSize: 14,
           fontWeight: 600,
-          borderRadius: "var(--radius)",
+          borderRadius: "var(--radius-pill)",
           background: "transparent",
           color: "var(--danger)",
           border: "1px solid var(--danger)",

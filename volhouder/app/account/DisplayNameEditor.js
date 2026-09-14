@@ -33,12 +33,12 @@ export default function DisplayNameEditor({ userId, initialName }) {
           onChange={(e) => setName(e.target.value)}
           onKeyDown={(e) => { if (e.key === "Enter") handleSave(); if (e.key === "Escape") setEditing(false); }}
           autoFocus
-          style={{ fontSize: 14, padding: "6px 10px", borderRadius: "var(--radius)", border: "1px solid var(--border)", background: "var(--glass-bg-strong)", color: "var(--text-primary)", fontFamily: "inherit", flex: 1, maxWidth: 200 }}
+          style={{ fontSize: 14, padding: "6px 10px", borderRadius: "var(--radius-sm)", border: "1px solid var(--border)", background: "var(--glass-bg-strong)", color: "var(--text-primary)", fontFamily: "inherit", flex: 1, maxWidth: 200 }}
         />
         <button
           onClick={handleSave}
           disabled={loading || !name.trim()}
-          style={{ display: "flex", alignItems: "center", gap: 4, padding: "6px 12px", fontSize: 13, borderRadius: "var(--radius)", background: "var(--navy)", color: "#fff", border: "none", cursor: "pointer", opacity: loading ? 0.6 : 1 }}
+          style={{ display: "flex", alignItems: "center", gap: 4, padding: "6px 12px", fontSize: 13, borderRadius: "var(--radius-pill)", background: "var(--navy)", color: "#fff", border: "none", cursor: "pointer", opacity: loading ? 0.6 : 1 }}
         >
           <Check size={14} strokeWidth={1.75} />
           Opslaan

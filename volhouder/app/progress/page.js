@@ -78,28 +78,46 @@ function ChartCard({ icon, title, subtitle, children }) {
   );
 }
 
-function BarRow({ bars, valueLabel }) {
-  const max = Math.max(1, ...bars.map((b) => b.value));
+// Rustige lijn/vlak-grafiek met een gradientvulling onder de lijn — SVG met
+// een vast viewBox i.p.v. geneste flex/percentage-hoogtes, zodat de balken
+// niet meer onzichtbaar-klein kunnen worden bij lage of gelijke waarden.
+function LineChart({ points, gradientId, color = "var(--accent)" }) {
+  const W = 600, H = 160;
+  const padX = 12, padTop = 12, padBottom = 22;
+  const chartH = H - padTop - padBottom;
+  const n = points.length;
+  const maxVal = Math.max(1, ...points.map((p) => p.value ?? 0));
+  const stepX = n > 1 ? (W - padX * 2) / (n - 1) : 0;
+  const baseline = padTop + chartH;
+
+  const coords = points.map((p, i) => {
+    const x = padX + i * stepX;
+    const v = p.value ?? 0;
+    const y = padTop + (1 - v / maxVal) * chartH;
+    return { x, y, value: p.value, label: p.label };
+  });
+
+  const linePath = coords.map((c, i) => `${i === 0 ? "M" : "L"}${c.x.toFixed(1)},${c.y.toFixed(1)}`).join(" ");
+  const areaPath = `${linePath} L${coords[n - 1].x.toFixed(1)},${baseline} L${coords[0].x.toFixed(1)},${baseline} Z`;
+
   return (
-    <div style={{ display: "flex", alignItems: "flex-end", gap: 8, height: 110 }}>
-      {bars.map((b) => (
-        <div key={b.label} style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center", height: "100%" }}>
-          <div style={{ flex: 1, display: "flex", alignItems: "flex-end", width: "100%" }}>
-            <div
-              title={valueLabel ? valueLabel(b) : String(b.value)}
-              style={{
-                width: "100%",
-                height: `${b.value === null ? 2 : Math.max(3, (b.value / max) * 100)}%`,
-                background: b.color || "var(--navy)",
-                borderRadius: "4px 4px 0 0",
-                opacity: b.value === null ? 0.15 : 1,
-              }}
-            />
-          </div>
-          <span style={{ fontSize: 10, color: "var(--muted-light)", marginTop: 4 }}>{b.label}</span>
-        </div>
+    <svg viewBox={`0 0 ${W} ${H}`} width="100%" height="140" preserveAspectRatio="none" style={{ display: "block", overflow: "visible" }}>
+      <defs>
+        <linearGradient id={gradientId} x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0%" stopColor={color} stopOpacity="0.28" />
+          <stop offset="100%" stopColor={color} stopOpacity="0" />
+        </linearGradient>
+      </defs>
+      <line x1={padX} y1={baseline} x2={W - padX} y2={baseline} stroke="var(--border)" strokeWidth="1" />
+      <path d={areaPath} fill={`url(#${gradientId})`} />
+      <path d={linePath} fill="none" stroke={color} strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" />
+      {coords.map((c, i) => c.value !== null && c.value !== undefined && (
+        <circle key={i} cx={c.x} cy={c.y} r="3" fill={color} />
       ))}
-    </div>
+      {coords.map((c, i) => (
+        <text key={`l-${i}`} x={c.x} y={H - 5} fontSize="9" fill="var(--muted-light)" textAnchor="middle">{c.label}</text>
+      ))}
+    </svg>
   );
 }
 
@@ -208,12 +226,12 @@ export default async function ProgressPage() {
               title="Slaagpercentage-trend"
               subtitle="Laatste 8 weken"
             >
-              <BarRow
-                bars={trend.map((t) => ({
+              <LineChart
+                gradientId="trend-gradient"
+                points={trend.map((t) => ({
                   label: new Date(t.weekStart + "T12:00:00").toLocaleDateString("nl-BE", { day: "numeric", month: "numeric" }),
                   value: t.rate,
                 }))}
-                valueLabel={(b) => (b.value === null ? "geen data" : `${b.value}%`)}
               />
             </ChartCard>
 
@@ -222,9 +240,9 @@ export default async function ProgressPage() {
               title="Kost van missen"
               subtitle={`Laatste 6 maanden · totaal €${totalMoneyLost.toFixed(2)}`}
             >
-              <BarRow
-                bars={moneyLost.map((m) => ({ label: m.label, value: m.amount, color: "var(--danger)" }))}
-                valueLabel={(b) => `€${b.value.toFixed(2)}`}
+              <LineChart
+                gradientId="cost-gradient"
+                points={moneyLost.map((m) => ({ label: m.label, value: m.amount }))}
               />
             </ChartCard>
 

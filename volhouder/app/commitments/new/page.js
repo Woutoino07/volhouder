@@ -5,6 +5,7 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import Nav from "@/components/Nav";
 import Link from "next/link";
+import { Camera, CheckSquare, Images } from "lucide-react";
 
 const DAYS = [
   { value: 1, label: "ma" },
@@ -17,9 +18,9 @@ const DAYS = [
 ];
 
 const PROOF_OPTIONS = [
-  { value: "photo", icon: "📷", label: "Foto", sub: "Foto verplicht" },
-  { value: "checkbox", icon: "✓", label: "Checkbox", sub: "Simpel afvinken" },
-  { value: "both", icon: "📷✓", label: "Beide", sub: "Foto of afvinken" },
+  { value: "photo", icon: Camera, label: "Foto", sub: "Foto verplicht" },
+  { value: "checkbox", icon: CheckSquare, label: "Checkbox", sub: "Simpel afvinken" },
+  { value: "both", icon: Images, label: "Beide", sub: "Foto of afvinken" },
 ];
 
 const FREQ_OPTIONS = [
@@ -208,13 +209,14 @@ function NewCommitmentForm() {
                     onClick={() => setFrequency(opt.value)}
                     style={{
                       flex: 1,
-                      padding: "8px 6px",
+                      padding: "9px 6px",
                       fontSize: 13,
                       fontWeight: 600,
-                      borderRadius: 20,
+                      borderRadius: "var(--radius-pill)",
                       border: frequency === opt.value ? "none" : "1px solid var(--border)",
-                      background: frequency === opt.value ? "var(--navy)" : "var(--bg-secondary)",
+                      background: frequency === opt.value ? "var(--navy)" : "var(--glass-bg-strong)",
                       color: frequency === opt.value ? "#fff" : "var(--text-primary)",
+                      boxShadow: frequency === opt.value ? "0 2px 8px rgba(0,0,255,0.25)" : "none",
                       cursor: "pointer",
                       fontFamily: "inherit",
                       transition: "all 0.15s",
@@ -271,34 +273,39 @@ function NewCommitmentForm() {
             <div className="field">
               <label>Bewijs</label>
               <div style={{ display: "flex", gap: 8, marginTop: 4 }}>
-                {PROOF_OPTIONS.map((opt) => (
-                  <button
-                    key={opt.value}
-                    type="button"
-                    onClick={() => setProofType(opt.value)}
-                    style={{
-                      flex: 1,
-                      padding: "12px 8px",
-                      fontSize: 12,
-                      fontWeight: 600,
-                      borderRadius: "var(--radius)",
-                      border: proofType === opt.value ? "2px solid var(--navy)" : "1px solid var(--border)",
-                      background: proofType === opt.value ? "var(--navy)" : "var(--bg-secondary)",
-                      color: proofType === opt.value ? "#fff" : "var(--text-primary)",
-                      cursor: "pointer",
-                      fontFamily: "inherit",
-                      display: "flex",
-                      flexDirection: "column",
-                      alignItems: "center",
-                      gap: 4,
-                      transition: "all 0.15s",
-                    }}
-                  >
-                    <span style={{ fontSize: 20 }}>{opt.icon}</span>
-                    <span>{opt.label}</span>
-                    <span style={{ fontSize: 10, fontWeight: 400, opacity: 0.8 }}>{opt.sub}</span>
-                  </button>
-                ))}
+                {PROOF_OPTIONS.map((opt) => {
+                  const Icon = opt.icon;
+                  const selected = proofType === opt.value;
+                  return (
+                    <button
+                      key={opt.value}
+                      type="button"
+                      onClick={() => setProofType(opt.value)}
+                      style={{
+                        flex: 1,
+                        padding: "14px 8px",
+                        fontSize: 12,
+                        fontWeight: 600,
+                        borderRadius: "var(--radius-sm)",
+                        border: selected ? "2px solid var(--navy)" : "1px solid var(--border)",
+                        background: selected ? "var(--navy)" : "var(--glass-bg-strong)",
+                        color: selected ? "#fff" : "var(--text-primary)",
+                        boxShadow: selected ? "0 4px 12px rgba(0,0,255,0.22)" : "none",
+                        cursor: "pointer",
+                        fontFamily: "inherit",
+                        display: "flex",
+                        flexDirection: "column",
+                        alignItems: "center",
+                        gap: 5,
+                        transition: "all 0.15s",
+                      }}
+                    >
+                      <Icon size={19} strokeWidth={1.75} />
+                      <span>{opt.label}</span>
+                      <span style={{ fontSize: 10, fontWeight: 400, opacity: 0.8 }}>{opt.sub}</span>
+                    </button>
+                  );
+                })}
               </div>
             </div>
 
@@ -348,7 +355,7 @@ function NewCommitmentForm() {
             </div>
           </div>
 
-          <button type="submit" disabled={loading} className="btn-full" style={{ width: "100%", padding: "14px", fontSize: 15, borderRadius: "var(--radius)", marginBottom: 24 }}>
+          <button type="submit" disabled={loading} className="btn-full" style={{ width: "100%", padding: "14px", fontSize: 15, borderRadius: "var(--radius-pill)", marginBottom: 24 }}>
             {loading ? "Bezig..." : "Commitment aanmaken"}
           </button>
         </form>
