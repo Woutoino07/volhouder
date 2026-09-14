@@ -5,11 +5,12 @@ import { createClient } from "@/lib/supabase/server";
 import { cleanupOldPhotos } from "@/lib/cleanupOldPhotos";
 import { computeStats } from "@/lib/stats";
 import {
-  Flame, Clock, Plus, Target, Camera, Check, X, ChevronRight,
+  Flame, Clock, Plus, Camera, Check, X, ChevronRight,
 } from "lucide-react";
 import { inferIcon } from "@/lib/icons";
 import { isDueOnDate } from "@/lib/schedule";
 import QuickAddBar from "@/components/QuickAddBar";
+import { StartJourneyIllustration } from "@/components/illustrations/EmptyIllustrations";
 import TaskCheckButton from "@/components/TaskCheckButton";
 import { ListChecks, Coins, CreditCard, TrendingUp } from "lucide-react";
 
@@ -344,8 +345,8 @@ export default async function DashboardPage() {
             {!hasAnyCommitments && (
               <div className="card">
                 <div className="empty-state">
-                  <div className="empty-state-icon">
-                    <Target size={24} strokeWidth={1.75} />
+                  <div className="empty-state-icon" style={{ background: "none" }}>
+                    <StartJourneyIllustration />
                   </div>
                   <h3>Start je eerste commitment</h3>
                   <p>Kies iets dat je wil volhouden. Een gewoonte, een doel, een belofte aan jezelf.</p>
