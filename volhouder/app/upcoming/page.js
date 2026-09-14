@@ -21,6 +21,12 @@ function mondayOf(date) {
   return d;
 }
 
+function addDays(dateStr, n) {
+  const d = new Date(dateStr + "T12:00:00");
+  d.setDate(d.getDate() + n);
+  return d.toISOString().slice(0, 10);
+}
+
 export default async function UpcomingPage({ searchParams }) {
   const offset = parseInt(searchParams?.week || "0", 10) || 0;
 
@@ -63,16 +69,23 @@ export default async function UpcomingPage({ searchParams }) {
     isSimple: c.proof_type === "checkbox" && Number(c.money_stake) === 0 && !partnerCounts[c.id],
   }));
 
+  // Ruimer venster dan de zichtbare week, zodat een voorkomen dat naar
+  // binnen of buiten deze week versleept is toch op de juiste dag verschijnt.
+  const fetchStart = addDays(weekDates[0], -21);
+  const fetchEnd = addDays(weekDates[6], 21);
+
   let checkIns = [];
   if (ids.length > 0) {
     const { data } = await supabase
       .from("check_ins")
-      .select("commitment_id, due_date, status")
+      .select("commitment_id, due_date, status, rescheduled_date, rescheduled_time")
       .in("commitment_id", ids)
-      .gte("due_date", weekDates[0])
-      .lte("due_date", weekDates[6]);
+      .gte("due_date", fetchStart)
+      .lte("due_date", fetchEnd);
     checkIns = data || [];
   }
+  const checkInByNaturalKey = {};
+  for (const c of checkIns) checkInByNaturalKey[`${c.commitment_id}_${c.due_date}`] = c;
   const statusByKey = {};
   for (const c of checkIns) statusByKey[`${c.commitment_id}_${c.due_date}`] = c.status;
 
@@ -108,17 +121,58 @@ export default async function UpcomingPage({ searchParams }) {
   // Simpele herhalende gewoontes leven bovenaan in de "gewoontes"-pool
   // (versleepbaar naar een tijdslot); alles met een geldinzet/partner of
   // een eenmalig tijdstip krijgt een vast blok in het uren-rooster.
+  //
+  // Een voorkomen kan versleept zijn (rescheduled_date/_time op de check-in):
+  // dan verschijnt het niet op zijn natuurlijke dag, maar op de nieuwe —
+  // ook als die buiten het normale patroon van de commitment valt.
   const itemsByDay = {};
   const poolByDay = {};
   for (const d of weekDates) {
-    const due = commitments
-      .filter((c) => isDueOnDate(c, d))
-      .map((c) => ({ commitment: c, status: statusByKey[`${c.id}_${d}`] }));
+    itemsByDay[d] = [];
+    poolByDay[d] = [];
+  }
 
-    poolByDay[d] = due.filter(({ commitment: c }) => c.isSimple && c.frequency !== "once");
-    itemsByDay[d] = due
-      .filter(({ commitment: c }) => !(c.isSimple && c.frequency !== "once"))
-      .sort((a, b) => (a.commitment.deadline_time || "").localeCompare(b.commitment.deadline_time || ""));
+  const commitmentById = {};
+  for (const c of commitments) commitmentById[c.id] = c;
+
+  function placeOccurrence(commitment, naturalDate, ci) {
+    const effectiveDate = ci?.rescheduled_date || naturalDate;
+    if (!itemsByDay[effectiveDate]) return; // buiten de zichtbare week
+    const effectiveTime = ci?.rescheduled_time || commitment.deadline_time;
+    const entry = {
+      commitment: { ...commitment, deadline_time: effectiveTime },
+      status: ci?.status,
+      naturalDate,
+      rescheduled: !!ci?.rescheduled_date,
+    };
+    if (commitment.isSimple && commitment.frequency !== "once") {
+      poolByDay[effectiveDate].push(entry);
+    } else {
+      itemsByDay[effectiveDate].push(entry);
+    }
+  }
+
+  // 1) Elk natuurlijk voorkomen binnen de zichtbare week (tenzij het naar
+  // een andere dag versleept is — dan slaan we de natuurlijke plek over).
+  for (const c of commitments) {
+    for (const d of weekDates) {
+      if (!isDueOnDate(c, d)) continue;
+      const ci = checkInByNaturalKey[`${c.id}_${d}`];
+      if (ci?.rescheduled_date && ci.rescheduled_date !== d) continue;
+      placeOccurrence(c, d, ci);
+    }
+  }
+  // 2) Voorkomens die van buiten deze week naar binnen versleept zijn.
+  for (const ci of checkIns) {
+    if (!ci.rescheduled_date || !itemsByDay[ci.rescheduled_date]) continue;
+    if (weekDates.includes(ci.due_date)) continue; // al gedekt door stap 1
+    const c = commitmentById[ci.commitment_id];
+    if (!c) continue;
+    placeOccurrence(c, ci.due_date, ci);
+  }
+
+  for (const d of weekDates) {
+    itemsByDay[d].sort((a, b) => (a.commitment.deadline_time || "").localeCompare(b.commitment.deadline_time || ""));
   }
   const totalDue = Object.values(itemsByDay).reduce((sum, arr) => sum + arr.length, 0)
     + Object.values(poolByDay).reduce((sum, arr) => sum + arr.length, 0);
