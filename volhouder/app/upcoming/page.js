@@ -3,7 +3,7 @@ import Nav from "@/components/Nav";
 import { createClient } from "@/lib/supabase/server";
 import { isDueOnDate } from "@/lib/schedule";
 import { inferIcon } from "@/lib/icons";
-import { ChevronLeft, ChevronRight, Plus, Repeat } from "lucide-react";
+import { ChevronLeft, ChevronRight, Plus, Repeat, TrendingUp, CloudUpload, ArrowRight } from "lucide-react";
 
 const DAY_LABELS = ["ma", "di", "wo", "do", "vr", "za", "zo"];
 const HOUR_START = 6;
@@ -78,6 +78,26 @@ export default async function UpcomingPage({ searchParams }) {
   }
   const totalDue = Object.values(itemsByDay).reduce((sum, arr) => sum + arr.length, 0);
 
+  const decided = checkIns.filter((c) => ["approved", "missed", "rejected"].includes(c.status));
+  const approvedCount = decided.filter((c) => c.status === "approved").length;
+  const weekRate = decided.length > 0 ? Math.round((approvedCount / decided.length) * 100) : null;
+  const habitCount = (commitments || []).filter((c) => c.frequency !== "once").length;
+  const taskCount = (commitments || []).filter((c) => c.frequency === "once").length;
+
+  const nowMinutes = now.getHours() * 60 + now.getMinutes();
+  const upNext = weekDates
+    .flatMap((d) => itemsByDay[d].map((item) => ({ ...item, date: d })))
+    .filter(({ date, commitment }) => {
+      if (date > today) return true;
+      if (date < today) return false;
+      const [hh, mm] = (commitment.deadline_time || "00:00").split(":").map(Number);
+      return hh * 60 + mm >= nowMinutes;
+    })
+    .sort((a, b) => (a.date + a.commitment.deadline_time).localeCompare(b.date + b.commitment.deadline_time))
+    .slice(0, 6);
+
+  const UP_NEXT_DAY_LABEL = { [today]: "Vandaag" };
+
   return (
     <>
       <Nav />
@@ -101,6 +121,7 @@ export default async function UpcomingPage({ searchParams }) {
           </div>
         )}
 
+        <div className="cal-layout">
         <div className="cal-wrap">
           <div className="cal-grid">
             {/* Header row */}
@@ -112,7 +133,7 @@ export default async function UpcomingPage({ searchParams }) {
                 <div key={d} className={`cal-header-cell ${isToday ? "today-col" : ""}`}>
                   <span className="cal-day-label">{DAY_LABELS[i]}</span>
                   <span className={`cal-day-num ${isToday ? "today" : ""}`}>{dayNum}</span>
-                  <Link href={`/commitments/new?date=${d}`} className="cal-add-btn" title="Toevoegen op deze dag">
+                  <Link href={`/commitments/quick?date=${d}`} className="cal-add-btn" title="Toevoegen op deze dag">
                     <Plus size={11} strokeWidth={2.5} />
                   </Link>
                 </div>
@@ -170,9 +191,63 @@ export default async function UpcomingPage({ searchParams }) {
             })}
           </div>
         </div>
+
+        <div className="cal-sidebar">
+          <div className="cal-stat-card">
+            <div className="cal-stat-header">
+              <TrendingUp size={14} strokeWidth={2} color="var(--navy)" />
+              <span>Deze week</span>
+            </div>
+            <div className="cal-stat-rate">{weekRate === null ? "—" : `${weekRate}%`}</div>
+            <div className="streak-bar" style={{ marginBottom: 10 }}>
+              <div className="streak-bar-fill" style={{ width: `${weekRate ?? 0}%` }} />
+            </div>
+            <div className="cal-stat-row">
+              <span>{habitCount} {habitCount === 1 ? "gewoonte" : "gewoontes"}</span>
+              <span>{taskCount} {taskCount === 1 ? "taak" : "taken"}</span>
+            </div>
+          </div>
+
+          <div className="cal-stat-card">
+            <div className="cal-stat-header">
+              <ChevronRight size={14} strokeWidth={2} color="var(--navy)" />
+              <span>Wat volgt</span>
+            </div>
+            {upNext.length === 0 && (
+              <p style={{ fontSize: 12, color: "var(--muted)", margin: 0 }}>Niets meer gepland deze week.</p>
+            )}
+            {upNext.map(({ commitment, date }, i) => {
+              const Icon = inferIcon(commitment.title);
+              const dayLabel = UP_NEXT_DAY_LABEL[date] || new Date(date + "T12:00:00").toLocaleDateString("nl-BE", { weekday: "short" });
+              return (
+                <Link key={`${commitment.id}_${date}`} href={`/commitments/${commitment.id}`} className="cal-upnext-row">
+                  <span className="cal-upnext-icon"><Icon size={13} strokeWidth={1.75} /></span>
+                  <span className="cal-upnext-info">
+                    <span className="cal-upnext-title">{commitment.title}</span>
+                    <span className="cal-upnext-meta">{dayLabel} · {commitment.deadline_time?.slice(0, 5)}</span>
+                  </span>
+                </Link>
+              );
+            })}
+          </div>
+
+          <Link href="/account" className="cal-stat-card cal-icloud-card">
+            <div className="cal-stat-header">
+              <CloudUpload size={14} strokeWidth={2} color="var(--navy)" />
+              <span>iCloud-agenda</span>
+            </div>
+            <p style={{ fontSize: 12, color: "var(--muted)", margin: "0 0 8px" }}>
+              Koppel je Apple-agenda zodat bestaande afspraken hier ook verschijnen.
+            </p>
+            <span className="cal-upnext-meta" style={{ display: "inline-flex", alignItems: "center", gap: 3, color: "var(--navy-light)", fontWeight: 700 }}>
+              Instellen <ArrowRight size={12} strokeWidth={2} />
+            </span>
+          </Link>
+        </div>
+        </div>
       </div>
 
-      <Link href="/commitments/new" className="fab wide" title="Nieuwe commitment">
+      <Link href="/commitments/quick" className="fab wide" title="Snel plannen">
         <Plus size={22} strokeWidth={2} />
       </Link>
     </>

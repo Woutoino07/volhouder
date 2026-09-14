@@ -9,6 +9,8 @@ import {
 } from "lucide-react";
 import { inferIcon } from "@/lib/icons";
 import { isDueOnDate } from "@/lib/schedule";
+import QuickAddBar from "@/components/QuickAddBar";
+import { ListChecks, Coins } from "lucide-react";
 
 const DAY_LABELS = ["ma", "di", "wo", "do", "vr", "za", "zo"];
 
@@ -157,6 +159,26 @@ function WeekPreview({ commitments }) {
   );
 }
 
+// ── Stat tiles — snelle context onder de quick-add ─
+function StatTiles({ activeCount, bestStreak, moneyAtStake }) {
+  const tiles = [
+    { icon: ListChecks, label: "Actief", value: activeCount },
+    { icon: Flame, label: "Beste streak", value: bestStreak },
+    { icon: Coins, label: "Inzet vandaag", value: `€${moneyAtStake.toFixed(0)}` },
+  ];
+  return (
+    <div className="stat-tile-row">
+      {tiles.map(({ icon: Icon, label, value }) => (
+        <div key={label} className="stat-tile">
+          <Icon size={14} strokeWidth={2} />
+          <span className="stat-tile-value">{value}</span>
+          <span className="stat-tile-label">{label}</span>
+        </div>
+      ))}
+    </div>
+  );
+}
+
 // ── Page ──────────────────────────────────────────
 export default async function DashboardPage() {
   const supabase = createClient();
@@ -226,6 +248,8 @@ export default async function DashboardPage() {
 
   const hasAnyCommitments = (commitments || []).length > 0;
   const doneToday = rows.filter((r) => r.checkin?.status === "approved").length;
+  const bestStreak = rows.reduce((max, r) => Math.max(max, r.stats.streak), 0);
+  const moneyAtStake = rows.reduce((sum, r) => sum + Number(r.commitment.money_stake || 0), 0);
 
   return (
     <>
@@ -238,6 +262,13 @@ export default async function DashboardPage() {
           </div>
           {rows.length > 0 && <ProgressRing done={doneToday} total={rows.length} />}
         </div>
+
+        {hasAnyCommitments && (
+          <>
+            <QuickAddBar />
+            <StatTiles activeCount={commitments.length} bestStreak={bestStreak} moneyAtStake={moneyAtStake} />
+          </>
+        )}
 
         <NotificationSetup />
 
