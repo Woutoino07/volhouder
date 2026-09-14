@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Home, CheckSquare, CreditCard, User, Target } from "lucide-react";
+import { Home, CheckSquare, CreditCard, User, Target, Flag, CalendarDays } from "lucide-react";
 
 export default function Nav({ pendingReviewCount = 0 }) {
   const pathname = usePathname();
@@ -14,6 +14,8 @@ export default function Nav({ pendingReviewCount = 0 }) {
 
   const navItems = [
     { href: "/", icon: <Home size={20} strokeWidth={1.75} />, label: "Home" },
+    { href: "/goals", icon: <Flag size={20} strokeWidth={1.75} />, label: "Doelen" },
+    { href: "/week", icon: <CalendarDays size={20} strokeWidth={1.75} />, label: "Week" },
     { href: "/review", icon: <CheckSquare size={20} strokeWidth={1.75} />, label: "Beoordeel", badge: pendingReviewCount },
     { href: "/ledger", icon: <CreditCard size={20} strokeWidth={1.75} />, label: "Schulden" },
     { href: "/account", icon: <User size={20} strokeWidth={1.75} />, label: "Account" },

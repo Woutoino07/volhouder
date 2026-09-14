@@ -406,7 +406,7 @@ export default async function DashboardPage() {
           <>
             <div className="section-header">
               <span className="section-title">Progressie</span>
-              <span className="section-subtitle">Afgelopen 7 dagen</span>
+              <Link href="/progress" className="section-subtitle">Alle inzichten →</Link>
             </div>
 
             {activeRows.map(({ commitment, stats }) => (

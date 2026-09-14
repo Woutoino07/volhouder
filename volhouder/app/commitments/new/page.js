@@ -1,7 +1,7 @@
 "use client";
 
-import { useState } from "react";
-import { useRouter } from "next/navigation";
+import { Suspense, useState } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import Nav from "@/components/Nav";
 import Link from "next/link";
@@ -28,10 +28,29 @@ const FREQ_OPTIONS = [
   { value: "once", label: "Eénmalig" },
 ];
 
+const INTENSITY_OPTIONS = [
+  { value: "los", label: "Los", sub: "Gewoon afvinken, geen inzet" },
+  { value: "licht", label: "Licht", sub: "Foto verplicht, geen geld/partner" },
+  { value: "vol", label: "Vol commitment", sub: "Foto + geldinzet + partnergoedkeuring" },
+];
+
 export default function NewCommitmentPage() {
+  return (
+    <Suspense fallback={null}>
+      <NewCommitmentForm />
+    </Suspense>
+  );
+}
+
+function NewCommitmentForm() {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const supabase = createClient();
 
+  const goalId = searchParams.get("goal_id");
+  const goalTitle = searchParams.get("goal_title");
+
+  const [intensity, setIntensity] = useState("vol");
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
   const [frequency, setFrequency] = useState("daily");
@@ -64,18 +83,26 @@ export default function NewCommitmentPage() {
 
     const commitmentId = crypto.randomUUID();
 
+    // Bij "los"/"licht" wordt bewijs/geld/sociaal automatisch vastgezet en
+    // worden er geen partners uitgenodigd — dat is precies wat die
+    // intensiteit betekent, ongeacht wat er nog in de (verborgen) velden staat.
+    const effectiveProofType = intensity === "los" ? "checkbox" : intensity === "licht" ? "photo" : proofType;
+    const effectiveMoneyStake = intensity === "vol" ? Number(moneyStake) || 0 : 0;
+    const effectiveSocial = intensity === "vol" ? socialConsequence : false;
+
     const payload = {
       id: commitmentId,
       owner_id: user.id,
+      goal_id: goalId || null,
       title,
       description: description || null,
       frequency,
       days_of_week: frequency === "weekly" ? daysOfWeek : null,
       once_date: frequency === "once" ? onceDate : null,
       deadline_time: deadlineTime,
-      proof_type: proofType,
-      money_stake: Number(moneyStake) || 0,
-      social_consequence: socialConsequence,
+      proof_type: effectiveProofType,
+      money_stake: effectiveMoneyStake,
+      social_consequence: effectiveSocial,
     };
 
     const { error: insertError } = await supabase.from("commitments").insert(payload);
@@ -86,10 +113,9 @@ export default function NewCommitmentPage() {
       return;
     }
 
-    const emails = partnerEmails
-      .split(/[\n,]/)
-      .map((e) => e.trim())
-      .filter(Boolean);
+    const emails = intensity === "vol"
+      ? partnerEmails.split(/[\n,]/).map((e) => e.trim()).filter(Boolean)
+      : [];
 
     if (emails.length > 0) {
       const rows = emails.map((email) => ({
@@ -161,8 +187,47 @@ export default function NewCommitmentPage() {
         </div>
         <p className="subtitle">Wees specifiek — hoe concreter, hoe minder ruimte om te foezelen.</p>
 
+        {goalTitle && (
+          <div style={{ fontSize: 13, color: "var(--muted)", margin: "-10px 0 16px" }}>
+            Wordt gekoppeld aan doel: <strong>{goalTitle}</strong>
+          </div>
+        )}
+
         <form onSubmit={handleSubmit}>
           {error && <div className="error-box">{error}</div>}
+
+          <div className="card">
+            <div className="field" style={{ marginBottom: 0 }}>
+              <label>Intensiteit</label>
+              <div style={{ display: "flex", flexDirection: "column", gap: 8, marginTop: 4 }}>
+                {INTENSITY_OPTIONS.map((opt) => (
+                  <button
+                    key={opt.value}
+                    type="button"
+                    onClick={() => setIntensity(opt.value)}
+                    style={{
+                      display: "flex",
+                      flexDirection: "column",
+                      alignItems: "flex-start",
+                      gap: 2,
+                      padding: "10px 12px",
+                      borderRadius: "var(--radius)",
+                      border: intensity === opt.value ? "2px solid var(--navy)" : "1px solid var(--border)",
+                      background: intensity === opt.value ? "var(--navy)" : "var(--bg-secondary)",
+                      color: intensity === opt.value ? "#fff" : "var(--text-primary)",
+                      cursor: "pointer",
+                      fontFamily: "inherit",
+                      textAlign: "left",
+                      transition: "all 0.15s",
+                    }}
+                  >
+                    <span style={{ fontWeight: 700, fontSize: 14 }}>{opt.label}</span>
+                    <span style={{ fontSize: 12, opacity: 0.85 }}>{opt.sub}</span>
+                  </button>
+                ))}
+              </div>
+            </div>
+          </div>
 
           <div className="card">
             <div className="field">
@@ -256,6 +321,7 @@ export default function NewCommitmentPage() {
             </div>
           </div>
 
+          {intensity === "vol" && (
           <div className="card">
             <div className="field">
               <label>Bewijs</label>
@@ -305,7 +371,9 @@ export default function NewCommitmentPage() {
               </div>
             </div>
           </div>
+          )}
 
+          {intensity === "vol" && (
           <div className="card">
             <div className="field">
               <div className="checkbox-row">
@@ -336,6 +404,7 @@ export default function NewCommitmentPage() {
               </div>
             </div>
           </div>
+          )}
 
           <button type="submit" disabled={loading} className="btn-full" style={{ width: "100%", padding: "14px", fontSize: 15, borderRadius: "var(--radius)", marginBottom: 24 }}>
             {loading ? "Bezig..." : "Commitment aanmaken"}
