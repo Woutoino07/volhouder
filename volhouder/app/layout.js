@@ -18,6 +18,13 @@ export const metadata = {
     icon: "/icons/icon-192.png",
     apple: "/icons/apple-touch-icon.png",
   },
+  // Zonder dit opent "Toevoegen aan beginscherm" op iPhone gewoon Safari met
+  // adresbalk — met deze tags start de app standalone, als een echte app.
+  appleWebApp: {
+    capable: true,
+    statusBarStyle: "black",
+    title: "Volhouder",
+  },
 };
 
 export const viewport = {
