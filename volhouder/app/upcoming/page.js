@@ -3,7 +3,8 @@ import Nav from "@/components/Nav";
 import { createClient } from "@/lib/supabase/server";
 import { isDueOnDate } from "@/lib/schedule";
 import { inferIcon } from "@/lib/icons";
-import { ChevronLeft, ChevronRight, Plus, Repeat, TrendingUp, CloudUpload, ArrowRight } from "lucide-react";
+import { ChevronLeft, ChevronRight, Plus, Repeat, TrendingUp, CloudUpload, Cloud, ArrowRight } from "lucide-react";
+import { fetchICloudEvents } from "@/lib/icloud";
 
 const DAY_LABELS = ["ma", "di", "wo", "do", "vr", "za", "zo"];
 const HOUR_START = 6;
@@ -31,7 +32,7 @@ export default async function UpcomingPage({ searchParams }) {
   const offset = parseInt(searchParams?.week || "0", 10) || 0;
 
   const supabase = createClient();
-  await supabase.auth.getUser();
+  const { data: { user } } = await supabase.auth.getUser();
 
   const monday = mondayOf(new Date());
   monday.setDate(monday.getDate() + offset * 7);
@@ -63,6 +64,33 @@ export default async function UpcomingPage({ searchParams }) {
   }
   const statusByKey = {};
   for (const c of checkIns) statusByKey[`${c.commitment_id}_${c.due_date}`] = c.status;
+
+  // iCloud-agenda (optioneel, alleen-lezen) — faalt nooit de pagina, enkel
+  // een foutmelding op de koppeling zelf zodat de gebruiker die kan zien
+  // op de Account-pagina.
+  const { data: icloudAccount } = await supabase
+    .from("icloud_accounts")
+    .select("apple_id, app_password")
+    .eq("owner_id", user.id)
+    .maybeSingle();
+
+  const icloudEventsByDay = {};
+  for (const d of weekDates) icloudEventsByDay[d] = [];
+
+  if (icloudAccount) {
+    try {
+      const events = await fetchICloudEvents(icloudAccount.apple_id, icloudAccount.app_password, weekDates[0], weekDates[6]);
+      for (const ev of events) {
+        if (icloudEventsByDay[ev.date]) icloudEventsByDay[ev.date].push(ev);
+      }
+      await supabase.from("icloud_accounts").update({ last_error: null }).eq("owner_id", user.id);
+    } catch (err) {
+      await supabase
+        .from("icloud_accounts")
+        .update({ last_error: String(err?.message || err).slice(0, 300) })
+        .eq("owner_id", user.id);
+    }
+  }
 
   const rangeLabel = `${new Date(weekDates[0] + "T12:00:00").toLocaleDateString("nl-BE", { day: "numeric", month: "short" })} – ${new Date(weekDates[6] + "T12:00:00").toLocaleDateString("nl-BE", { day: "numeric", month: "short" })}`;
 
@@ -186,6 +214,25 @@ export default async function UpcomingPage({ searchParams }) {
                       </Link>
                     );
                   })}
+                  {icloudEventsByDay[d].map((ev, i) => {
+                    const [hh, mm] = ev.time.split(":").map(Number);
+                    const clampedHour = Math.min(Math.max(hh, HOUR_START), HOUR_END - 1);
+                    const top = (clampedHour - HOUR_START) * HOUR_HEIGHT + (mm / 60) * HOUR_HEIGHT;
+                    const height = Math.max(22, (ev.durationMinutes / 60) * HOUR_HEIGHT - 2);
+                    return (
+                      <div
+                        key={`ic-${d}-${i}`}
+                        className="cal-task-block icloud"
+                        style={{ top, height }}
+                        title={ev.calendarName}
+                      >
+                        <span className="cal-task-time">
+                          <Cloud size={9} strokeWidth={2.25} /> {ev.time}
+                        </span>
+                        <span className="cal-task-title">{ev.title}</span>
+                      </div>
+                    );
+                  })}
                 </div>
               );
             })}
@@ -236,11 +283,17 @@ export default async function UpcomingPage({ searchParams }) {
               <CloudUpload size={14} strokeWidth={2} color="var(--navy)" />
               <span>iCloud-agenda</span>
             </div>
-            <p style={{ fontSize: 12, color: "var(--muted)", margin: "0 0 8px" }}>
-              Koppel je Apple-agenda zodat bestaande afspraken hier ook verschijnen.
-            </p>
+            {icloudAccount ? (
+              <p style={{ fontSize: 12, color: "var(--muted)", margin: "0 0 8px" }}>
+                Gekoppeld met {icloudAccount.apple_id}
+              </p>
+            ) : (
+              <p style={{ fontSize: 12, color: "var(--muted)", margin: "0 0 8px" }}>
+                Koppel je Apple-agenda zodat bestaande afspraken hier ook verschijnen.
+              </p>
+            )}
             <span className="cal-upnext-meta" style={{ display: "inline-flex", alignItems: "center", gap: 3, color: "var(--navy-light)", fontWeight: 700 }}>
-              Instellen <ArrowRight size={12} strokeWidth={2} />
+              {icloudAccount ? "Beheren" : "Instellen"} <ArrowRight size={12} strokeWidth={2} />
             </span>
           </Link>
         </div>

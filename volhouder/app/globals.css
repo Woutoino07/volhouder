@@ -2359,6 +2359,12 @@ textarea {
 .cal-task-block.submitted { background: rgba(37,99,235,0.12); color: var(--accent); border-left-color: var(--accent); }
 .cal-task-block.approved { background: var(--success-bg); color: var(--success); border-left-color: var(--success); }
 .cal-task-block.missed { background: var(--border); color: var(--muted); border-left-color: var(--muted-light); }
+.cal-task-block.icloud {
+  background: var(--purple-bg);
+  color: var(--purple);
+  border-left-color: var(--purple);
+  cursor: default;
+}
 
 /* Progress cards */
 .progress-card {

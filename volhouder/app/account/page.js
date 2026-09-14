@@ -4,6 +4,7 @@ import ConnectStripeButton from "@/components/ConnectStripeButton";
 import NotificationSetup from "@/components/NotificationSetup";
 import DisplayNameEditor from "./DisplayNameEditor";
 import SignOutButton from "./SignOutButton";
+import ICloudConnect from "./ICloudConnect";
 
 export default async function AccountPage() {
   const supabase = createClient();
@@ -21,6 +22,12 @@ export default async function AccountPage() {
 
   const displayName = profile?.display_name || profile?.email || user.email || "";
   const initial = displayName.charAt(0).toUpperCase();
+
+  const { data: icloudAccount } = await supabase
+    .from("icloud_accounts")
+    .select("apple_id, last_error")
+    .eq("owner_id", user.id)
+    .maybeSingle();
 
   return (
     <>
@@ -44,6 +51,15 @@ export default async function AccountPage() {
         </div>
 
         <NotificationSetup />
+
+        <div className="card">
+          <h2>iCloud-agenda</h2>
+          <p style={{ fontSize: 14, color: "var(--muted)", margin: "0 0 12px" }}>
+            Toon je bestaande Apple-agenda-items in de Aankomend-kalender. Alleen lezen — er wordt
+            niets naar iCloud teruggeschreven.
+          </p>
+          <ICloudConnect userId={user.id} appleId={icloudAccount?.apple_id} lastError={icloudAccount?.last_error} />
+        </div>
 
         {stripeConfigured && (
           <div className="card">
