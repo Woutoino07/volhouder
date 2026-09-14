@@ -51,7 +51,7 @@ const ACTION_ICON = {
 };
 
 // ── Today Row — simple: title + deadline left, action circle right ──
-function TodayRow({ commitment, checkin, stats, today }) {
+function TodayRow({ commitment, checkin, stats, today, index }) {
   const status = checkin?.status ?? "pending";
   const accentClass = status === "approved" ? "approved"
     : status === "submitted" ? "submitted"
@@ -59,33 +59,27 @@ function TodayRow({ commitment, checkin, stats, today }) {
     : "pending";
   const Icon = inferIcon(commitment.title);
 
-  const body = (
+  const info = (
     <>
-      <div className={`today-card-accent ${accentClass}`} />
-      <div className="today-row-body">
-        <span className="today-row-icon"><Icon size={16} strokeWidth={1.75} /></span>
-        <div className="today-row-info">
-          <div className="today-row-title">{commitment.title}</div>
-          <div className="today-row-meta">
-            {commitment.deadline_time && (
-              <span className="deadline-pill">
-                <Clock size={11} strokeWidth={2} />
-                {commitment.deadline_time.slice(0, 5)}
-              </span>
-            )}
-            {stats.streak > 0 && (
-              <span className="streak-badge">
-                <Flame size={13} strokeWidth={2} />
-                {stats.streak}
-              </span>
-            )}
-            {status === "submitted" && <span>Wacht op beoordeling</span>}
-            {status === "approved" && <span>Gelukt vandaag</span>}
-            {(status === "missed" || status === "rejected") && <span>Gemist</span>}
-          </div>
-        </div>
-        <div className={`today-row-action ${accentClass} ${commitment.isSimple ? "simple" : ""}`}>
-          {status === "approved" ? <Check size={20} strokeWidth={2.5} /> : (commitment.isSimple ? null : ACTION_ICON[accentClass])}
+      <span className="today-row-icon"><Icon size={16} strokeWidth={1.75} /></span>
+      <div className="today-row-info">
+        <div className="today-row-title">{commitment.title}</div>
+        <div className="today-row-meta">
+          {commitment.deadline_time && (
+            <span className="deadline-pill">
+              <Clock size={11} strokeWidth={2} />
+              {commitment.deadline_time.slice(0, 5)}
+            </span>
+          )}
+          {stats.streak > 0 && (
+            <span className="streak-badge">
+              <Flame size={13} strokeWidth={2} />
+              {stats.streak}
+            </span>
+          )}
+          {status === "submitted" && <span>Wacht op beoordeling</span>}
+          {status === "approved" && <span>Gelukt vandaag</span>}
+          {(status === "missed" || status === "rejected") && <span>Gemist</span>}
         </div>
       </div>
     </>
@@ -93,15 +87,21 @@ function TodayRow({ commitment, checkin, stats, today }) {
 
   if (commitment.isSimple) {
     return (
-      <TaskCheckButton commitmentId={commitment.id} date={today} status={status} className="today-card">
-        {body}
+      <TaskCheckButton commitmentId={commitment.id} date={today} status={status} className="today-card stagger-item" index={index}>
+        {info}
       </TaskCheckButton>
     );
   }
 
   return (
-    <Link href={`/commitments/${commitment.id}`} className="today-card">
-      {body}
+    <Link href={`/commitments/${commitment.id}`} className="today-card stagger-item" style={{ "--stagger": index }}>
+      <div className={`today-card-accent ${accentClass}`} />
+      <div className="today-row-body">
+        {info}
+        <div className={`today-row-action ${accentClass}`}>
+          {ACTION_ICON[accentClass]}
+        </div>
+      </div>
     </Link>
   );
 }
@@ -126,7 +126,7 @@ function ProgressRing({ done, total }) {
           strokeLinecap="round"
           strokeDasharray={circumference}
           strokeDashoffset={offset}
-          style={{ transition: "stroke-dashoffset 0.3s" }}
+          style={{ transition: "stroke-dashoffset var(--ease-progress)" }}
         />
       </svg>
       <div style={{
@@ -369,8 +369,8 @@ export default async function DashboardPage() {
               </div>
             )}
 
-            {rows.map(({ commitment, checkin, stats }) => (
-              <TodayRow key={commitment.id} commitment={commitment} checkin={checkin} stats={stats} today={todayStr} />
+            {rows.map(({ commitment, checkin, stats }, i) => (
+              <TodayRow key={commitment.id} commitment={commitment} checkin={checkin} stats={stats} today={todayStr} index={i} />
             ))}
           </div>
 

@@ -8,6 +8,7 @@ import "@fontsource/inter/600.css";
 import "@fontsource/inter/700.css";
 import "@fontsource/inter/800.css";
 import "./globals.css";
+import ToastProvider from "@/components/ToastProvider";
 
 export const metadata = {
   title: "Volhouder",
@@ -26,7 +27,9 @@ export const viewport = {
 export default function RootLayout({ children }) {
   return (
     <html lang="nl">
-      <body>{children}</body>
+      <body>
+        <ToastProvider>{children}</ToastProvider>
+      </body>
     </html>
   );
 }

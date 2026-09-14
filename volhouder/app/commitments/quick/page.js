@@ -6,6 +6,7 @@ import { createClient } from "@/lib/supabase/client";
 import Nav from "@/components/Nav";
 import Link from "next/link";
 import { ArrowRight } from "lucide-react";
+import { useToast } from "@/components/ToastProvider";
 
 function todayStr() {
   return new Date().toISOString().slice(0, 10);
@@ -29,6 +30,7 @@ function QuickTaskForm() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const supabase = createClient();
+  const { showToast } = useToast();
 
   const [title, setTitle] = useState("");
   const [date, setDate] = useState(searchParams.get("date") || todayStr());
@@ -63,6 +65,7 @@ function QuickTaskForm() {
       return;
     }
 
+    showToast(`"${title}" toegevoegd aan je kalender`);
     router.push("/upcoming");
     router.refresh();
   }

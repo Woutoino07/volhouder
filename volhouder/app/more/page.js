@@ -54,6 +54,7 @@ export default async function MorePage() {
             <Link
               key={item.href}
               href={item.href}
+              className="more-row"
               style={{
                 display: "flex",
                 alignItems: "center",

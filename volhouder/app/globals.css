@@ -53,6 +53,12 @@
   --blur-sm: blur(8px);
   --blur-md: blur(16px);
   --blur-lg: blur(24px);
+
+  /* De enige twee transition-timings in de hele app — kleur/achtergrond
+     reageert sneller dan beweging, zodat alles als één systeem aanvoelt. */
+  --ease-color: 150ms ease-out;
+  --ease-transform: 200ms ease-out;
+  --ease-progress: 400ms ease-out;
 }
 
 *, *::before, *::after {
@@ -171,7 +177,7 @@ h3 {
   text-decoration: none;
   font-size: 14px;
   font-weight: 500;
-  transition: color 0.15s;
+  transition: color var(--ease-color);
 }
 
 .back-link:hover {
@@ -194,7 +200,7 @@ h3 {
   box-shadow: var(--glass-shadow);
   backdrop-filter: var(--blur-sm);
   -webkit-backdrop-filter: var(--blur-sm);
-  transition: box-shadow 0.15s;
+  transition: box-shadow var(--ease-color);
 }
 
 .back-btn:hover {
@@ -222,7 +228,7 @@ h3 {
   padding: 20px;
   margin-bottom: 16px;
   box-shadow: var(--glass-shadow);
-  transition: box-shadow 0.25s ease, transform 0.2s ease;
+  transition: box-shadow var(--ease-color), transform var(--ease-transform);
 }
 
 .card:hover {
@@ -298,7 +304,7 @@ nav.bottom-nav a,
   font-size: 10px;
   font-weight: 500;
   letter-spacing: 0.02em;
-  transition: color 0.15s, background 0.15s;
+  transition: color var(--ease-color), background var(--ease-color);
   flex: 1;
   position: relative;
 }
@@ -360,6 +366,78 @@ nav.bottom-nav .nav-badge,
   min-height: 100vh;
 }
 
+/* Skeleton-loading — pulserende placeholder i.p.v. een lege witte flits */
+@keyframes skeleton-pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.55; }
+}
+.skeleton {
+  background: var(--border);
+  border-radius: var(--radius-sm);
+  animation: skeleton-pulse 1.4s ease-in-out infinite;
+}
+.skeleton-card {
+  background: var(--glass-bg);
+  border: 1px solid var(--glass-border);
+  border-radius: var(--radius);
+  box-shadow: var(--glass-shadow);
+  padding: 20px;
+  margin-bottom: 16px;
+}
+
+/* Toast/snackbar — één consistente bevestiging voor elke actie */
+@keyframes toast-in {
+  from { opacity: 0; transform: translate(-50%, 12px); }
+  to   { opacity: 1; transform: translate(-50%, 0); }
+}
+.toast-stack {
+  position: fixed;
+  left: 50%;
+  bottom: calc(var(--bottom-nav-height) + 16px);
+  transform: translateX(-50%);
+  z-index: 2000;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  width: calc(100% - 32px);
+  max-width: 380px;
+  pointer-events: none;
+}
+.toast {
+  pointer-events: auto;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  background: var(--navy-glass);
+  backdrop-filter: var(--blur-lg) saturate(180%);
+  -webkit-backdrop-filter: var(--blur-lg) saturate(180%);
+  color: #fff;
+  border-radius: var(--radius-pill);
+  padding: 12px 16px;
+  font-size: 13px;
+  font-weight: 500;
+  box-shadow: 0 8px 28px rgba(33, 12, 55, 0.3);
+  animation: toast-in 200ms ease-out both;
+}
+.toast-icon { color: var(--success); flex-shrink: 0; }
+.toast-message { flex: 1; min-width: 0; }
+.toast-action {
+  background: none;
+  border: none;
+  color: var(--navy-light);
+  font-weight: 700;
+  font-size: 13px;
+  padding: 0;
+  cursor: pointer;
+  flex-shrink: 0;
+}
+@media (min-width: 768px) {
+  .toast-stack {
+    bottom: 24px;
+    left: calc(var(--sidebar-width) + (100% - var(--sidebar-width)) / 2);
+  }
+}
+
 .fab {
   position: fixed;
   bottom: calc(var(--bottom-nav-height) + 16px);
@@ -376,7 +454,7 @@ nav.bottom-nav .nav-badge,
   justify-content: center;
   box-shadow: 0 8px 24px rgba(33, 12, 55, 0.35), 0 1px 0 rgba(255, 255, 255, 0.12) inset;
   text-decoration: none;
-  transition: all 0.2s cubic-bezier(0.34, 1.56, 0.64, 1);
+  transition: transform var(--ease-transform), box-shadow var(--ease-color);
   z-index: 50;
   font-size: 24px;
 }
@@ -409,7 +487,7 @@ button, .btn {
   text-decoration: none;
   cursor: pointer;
   border: none;
-  transition: all 0.18s cubic-bezier(0.4, 0, 0.2, 1);
+  transition: background-color var(--ease-color), box-shadow var(--ease-color), transform var(--ease-transform);
   white-space: nowrap;
   font-family: inherit;
   background: var(--navy);
@@ -488,7 +566,7 @@ button.success:hover:not(:disabled) {
   font-weight: 700;
   cursor: pointer;
   font-family: inherit;
-  transition: background 0.15s ease, transform 0.15s;
+  transition: background var(--ease-color), transform var(--ease-transform);
   box-shadow: 0 4px 16px rgba(33, 12, 55, 0.25);
 }
 
@@ -576,7 +654,7 @@ textarea {
   font-size: 15px;
   color: var(--text-primary);
   outline: none;
-  transition: border-color 0.15s, box-shadow 0.15s;
+  transition: border-color var(--ease-color), box-shadow var(--ease-color);
   appearance: none;
   -webkit-appearance: none;
   font-family: inherit;
@@ -628,7 +706,7 @@ textarea {
   font-weight: 500;
   color: var(--text-secondary);
   cursor: pointer;
-  transition: all 0.15s;
+  transition: background-color var(--ease-color), border-color var(--ease-color), color var(--ease-color);
   letter-spacing: 0;
   text-transform: none;
 }
@@ -659,7 +737,7 @@ textarea {
   cursor: pointer;
   color: var(--text-secondary);
   font-family: inherit;
-  transition: background 0.15s ease, border-color 0.15s ease, color 0.15s ease;
+  transition: background var(--ease-color), border-color var(--ease-color), color var(--ease-color);
 }
 
 .day-toggle.active {
@@ -727,7 +805,7 @@ textarea {
   display: block;
   text-decoration: none;
   color: var(--text-primary);
-  transition: box-shadow 0.25s ease;
+  transition: box-shadow var(--ease-color);
 }
 
 .commitment-card:hover {
@@ -773,7 +851,7 @@ textarea {
   border-bottom: 1px solid var(--border);
   text-decoration: none;
   color: inherit;
-  transition: all 0.15s;
+  transition: background-color var(--ease-color), border-color var(--ease-color), color var(--ease-color);
 }
 
 .commitment-item:last-child {
@@ -825,11 +903,22 @@ textarea {
   height: 100%;
   background: var(--navy);
   border-radius: var(--radius-pill);
-  transition: width 0.3s ease;
+  transition: width var(--ease-progress);
 }
 
 .streak-bar-fill.success {
   background: var(--success);
+}
+
+.more-row {
+  position: relative;
+  transition: background var(--ease-color), transform var(--ease-transform);
+}
+.more-row:hover {
+  background: var(--accent-light);
+}
+.more-row:active {
+  transform: scale(0.99);
 }
 
 .list-item {
@@ -1001,7 +1090,7 @@ textarea {
   cursor: pointer;
   border: none;
   box-shadow: 0 4px 16px rgba(33, 12, 55, 0.25);
-  transition: all 0.18s;
+  transition: background-color var(--ease-color), box-shadow var(--ease-color), transform var(--ease-transform);
   letter-spacing: 0.01em;
   font-family: inherit;
 }
@@ -1210,7 +1299,7 @@ textarea {
   aspect-ratio: 1;
   border-radius: 5px;
   background: var(--border);
-  transition: transform 0.1s;
+  transition: transform var(--ease-transform);
   cursor: default;
 }
 
@@ -1316,7 +1405,7 @@ textarea {
     font-weight: 500;
     color: rgba(255, 255, 255, 0.55);
     border-left: 3px solid transparent;
-    transition: background 150ms ease-out, color 150ms ease-out, border-color 150ms ease-out;
+    transition: background var(--ease-color), color var(--ease-color), border-color var(--ease-color);
     letter-spacing: 0.01em;
   }
 
@@ -1470,7 +1559,7 @@ textarea {
   border: none;
   border-radius: var(--radius);
   cursor: pointer;
-  transition: all 0.2s cubic-bezier(0.34, 1.56, 0.64, 1);
+  transition: transform var(--ease-transform), box-shadow var(--ease-color);
   box-shadow: 0 6px 24px rgba(33,12,55,0.28);
 }
 .capture-trigger:hover {
@@ -1518,7 +1607,7 @@ textarea {
   border-radius: var(--radius-pill);
   border: 1px solid var(--border);
   background: var(--glass-bg);
-  transition: all 0.15s;
+  transition: background-color var(--ease-color), border-color var(--ease-color), color var(--ease-color);
   margin-bottom: 8px;
 }
 .capture-upload-alt:hover { background: var(--glass-bg-strong); color: var(--text-primary); }
@@ -1600,7 +1689,7 @@ textarea {
   justify-content: center;
   cursor: pointer;
   margin: 18px auto 20px;
-  transition: transform 0.12s, opacity 0.15s;
+  transition: transform var(--ease-transform), opacity var(--ease-color);
   flex-shrink: 0;
   box-shadow: none;
 }
@@ -1613,7 +1702,7 @@ textarea {
   border-radius: 50%;
   background: white;
   display: block;
-  transition: transform 0.1s;
+  transition: transform var(--ease-transform);
 }
 .shutter-btn:active .shutter-inner { transform: scale(0.88); }
 
@@ -1735,7 +1824,7 @@ textarea {
   margin-bottom: 10px;
   overflow: hidden;
   box-shadow: var(--glass-shadow);
-  transition: box-shadow 0.2s, transform 0.2s;
+  transition: box-shadow var(--ease-color), transform var(--ease-transform);
   display: flex;
   align-items: stretch;
   text-decoration: none;
@@ -1744,6 +1833,17 @@ textarea {
 .today-card:hover {
   box-shadow: var(--glass-shadow-hover);
   transform: translateY(-1px);
+}
+
+/* Staggered entrance — lichte fade/slide-in per item bij het laden van een
+   lijst, i.p.v. alles in één keer. --stagger wordt per item meegegeven. */
+@keyframes stagger-in {
+  from { opacity: 0; transform: translateY(6px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+.stagger-item {
+  animation: stagger-in 320ms ease-out both;
+  animation-delay: calc(var(--stagger, 0) * 35ms);
 }
 .today-card-accent {
   width: 4px;
@@ -1789,7 +1889,7 @@ textarea {
   font-size: 14px;
   font-weight: 600;
   letter-spacing: 0.01em;
-  transition: all 0.18s;
+  transition: background-color var(--ease-color), box-shadow var(--ease-color), transform var(--ease-transform);
   box-shadow: 0 2px 8px rgba(33,12,55,0.2);
 }
 .checkin-cta:hover {
@@ -1907,7 +2007,7 @@ textarea {
   padding: 16px 18px 14px;
   text-decoration: none;
   color: inherit;
-  transition: box-shadow 0.2s, transform 0.2s;
+  transition: box-shadow var(--ease-color), transform var(--ease-transform);
 }
 .week-preview:hover {
   box-shadow: var(--glass-shadow-hover);
@@ -2037,9 +2137,21 @@ textarea {
   align-items: center;
   justify-content: center;
   flex-shrink: 0;
-  transition: transform 0.15s;
+  transition: transform var(--ease-transform);
 }
 .today-card:hover .today-row-action { transform: scale(1.06); }
+
+/* Het beloningsmoment: de actiecirkel "pop"t naar groen bij voltooien */
+@keyframes checkmark-pop {
+  0%   { transform: scale(1); }
+  35%  { transform: scale(1.22); }
+  60%  { transform: scale(0.94); }
+  100% { transform: scale(1); }
+}
+.today-row-action.pop {
+  animation: checkmark-pop 260ms cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
 /* Nog niet gedaan: lichte accenttint, geen zware vulling */
 .today-row-action.pending {
   background: var(--accent-light);
@@ -2226,7 +2338,7 @@ textarea {
   color: inherit;
 }
 .cal-icloud-card {
-  transition: box-shadow 0.2s, transform 0.2s;
+  transition: box-shadow var(--ease-color), transform var(--ease-transform);
 }
 .cal-icloud-card:hover {
   box-shadow: var(--glass-shadow-hover);
@@ -2600,7 +2712,7 @@ button.cal-task-block {
   text-decoration: none;
   color: var(--text-secondary);
   font-size: 14px;
-  transition: background 0.15s;
+  transition: background var(--ease-color);
   border-bottom: 1px solid var(--border);
 }
 .not-today-item:last-child { border-bottom: none; }

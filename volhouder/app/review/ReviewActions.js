@@ -4,10 +4,12 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import { CheckCircle2, XCircle } from "lucide-react";
+import { useToast } from "@/components/ToastProvider";
 
 export default function ReviewActions({ checkinId }) {
   const supabase = createClient();
   const router = useRouter();
+  const { showToast } = useToast();
   const [rejecting, setRejecting] = useState(false);
   const [reason, setReason] = useState("");
   const [loading, setLoading] = useState(false);
@@ -19,6 +21,7 @@ export default function ReviewActions({ checkinId }) {
       .from("check_ins")
       .update({ status: "approved", judged_by: user.id, judged_at: new Date().toISOString() })
       .eq("id", checkinId);
+    showToast("Goedgekeurd");
     router.refresh();
   }
 
@@ -30,6 +33,7 @@ export default function ReviewActions({ checkinId }) {
       p_checkin_id: checkinId,
       p_reason: reason.trim(),
     });
+    showToast("Afgekeurd");
     router.refresh();
   }
 
