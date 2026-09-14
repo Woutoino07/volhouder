@@ -308,9 +308,9 @@ export default async function CommitmentDetailPage({ params }) {
             {withPhotoUrls.length > 0 && (
               <>
                 <div className="legend" style={{ marginBottom: 8 }}>
-                  <span><span style={{display:"inline-block",width:8,height:8,borderRadius:"50%",background:"#16A34A",marginRight:4}}/>gelukt</span>
-                  <span><span style={{display:"inline-block",width:8,height:8,borderRadius:"50%",background:"#DC2626",marginRight:4}}/>gemist</span>
-                  <span><span style={{display:"inline-block",width:8,height:8,borderRadius:"50%",background:"#D97706",marginRight:4}}/>pending</span>
+                  <span><span style={{display:"inline-block",width:8,height:8,borderRadius:"50%",background:"var(--success)",marginRight:4}}/>gelukt</span>
+                  <span><span style={{display:"inline-block",width:8,height:8,borderRadius:"50%",background:"var(--danger)",marginRight:4}}/>gemist</span>
+                  <span><span style={{display:"inline-block",width:8,height:8,borderRadius:"50%",background:"var(--warning)",marginRight:4}}/>pending</span>
                 </div>
                 <div className="history-dots" style={{ marginBottom: 16 }}>
                 {withPhotoUrls.slice(0, 28).map((h) => (

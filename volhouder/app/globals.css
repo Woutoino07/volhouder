@@ -230,11 +230,11 @@ h3 {
 }
 
 .card h2 {
-  font-size: 13px;
+  font-size: 14px;
   font-weight: 600;
-  letter-spacing: 0.06em;
-  text-transform: uppercase;
-  color: var(--muted);
+  letter-spacing: 0;
+  text-transform: none;
+  color: var(--text-secondary);
   margin-bottom: 16px;
 }
 
@@ -256,11 +256,11 @@ h3 {
 
 .card-section-header h2 {
   margin: 0;
-  font-size: 13px;
+  font-size: 14px;
   font-weight: 600;
-  letter-spacing: 0.06em;
-  text-transform: uppercase;
-  color: var(--muted);
+  letter-spacing: 0;
+  text-transform: none;
+  color: var(--text-secondary);
 }
 
 nav.bottom-nav,
@@ -1308,14 +1308,15 @@ textarea {
     display: flex;
     align-items: center;
     gap: 10px;
-    padding: 10px 20px;
+    padding: 10px 20px 10px 17px;
     margin: 2px 10px;
     border-radius: 10px;
     text-decoration: none;
     font-size: 14px;
     font-weight: 500;
     color: rgba(255, 255, 255, 0.55);
-    transition: all 0.15s;
+    border-left: 3px solid transparent;
+    transition: background 150ms ease-out, color 150ms ease-out, border-color 150ms ease-out;
     letter-spacing: 0.01em;
   }
 
@@ -1326,7 +1327,8 @@ textarea {
 
   .sidebar a.active {
     color: white;
-    background: var(--navy);
+    background: rgba(0, 0, 255, 0.28);
+    border-left-color: var(--navy-light);
   }
 
   .sidebar a svg {
@@ -1369,6 +1371,21 @@ textarea {
 @media (min-width: 1024px) {
   .shell {
     padding: 56px 40px 64px;
+  }
+}
+
+@media (min-width: 1600px) {
+  .shell {
+    max-width: 1360px;
+  }
+  .shell-wide {
+    max-width: 1600px;
+  }
+  .fab {
+    right: max(24px, calc((100vw - var(--sidebar-width) - 1360px) / 2 + 24px));
+  }
+  .fab.wide {
+    right: max(24px, calc((100vw - var(--sidebar-width) - 1600px) / 2 + 24px));
   }
 }
 
@@ -1794,9 +1811,7 @@ textarea {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  background: var(--glass-bg);
-  backdrop-filter: var(--blur-md) saturate(180%);
-  -webkit-backdrop-filter: var(--blur-md) saturate(180%);
+  background: linear-gradient(135deg, #FFFFFF 0%, #F3F4FF 60%, #ECEEFF 100%);
   border: 1px solid var(--glass-border);
   border-radius: var(--radius);
   box-shadow: var(--glass-shadow);
@@ -2498,9 +2513,9 @@ button.cal-task-block {
   white-space: nowrap;
 }
 .cal-task-block.pending { background: var(--accent-light); color: var(--navy); border-left-color: var(--navy); }
-.cal-task-block.submitted { background: rgba(37,99,235,0.12); color: var(--accent); border-left-color: var(--accent); }
+.cal-task-block.submitted { background: var(--warning-bg); color: var(--warning); border-left-color: var(--warning); }
 .cal-task-block.approved { background: var(--success-bg); color: var(--success); border-left-color: var(--success); }
-.cal-task-block.missed { background: var(--border); color: var(--muted); border-left-color: var(--muted-light); }
+.cal-task-block.missed { background: var(--danger-bg); color: var(--danger); border-left-color: var(--danger); }
 .cal-task-block.icloud {
   background: var(--purple-bg);
   color: var(--purple);
