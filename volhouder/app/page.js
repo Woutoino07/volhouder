@@ -5,9 +5,21 @@ import { createClient } from "@/lib/supabase/server";
 import { cleanupOldPhotos } from "@/lib/cleanupOldPhotos";
 import { computeStats } from "@/lib/stats";
 import {
-  Flame, Clock, Plus, Target, Camera, Check, X, AlertCircle, CalendarDays,
+  Flame, Clock, Plus, Target, Camera, Check, X, AlertCircle, ChevronRight,
 } from "lucide-react";
 import { inferIcon } from "@/lib/icons";
+import { isDueOnDate } from "@/lib/schedule";
+
+const DAY_LABELS = ["ma", "di", "wo", "do", "vr", "za", "zo"];
+
+function mondayOf(date) {
+  const d = new Date(date);
+  const dow = d.getDay();
+  const diff = dow === 0 ? -6 : 1 - dow;
+  d.setDate(d.getDate() + diff);
+  d.setHours(0, 0, 0, 0);
+  return d;
+}
 
 function getGreeting() {
   const h = new Date().getHours();
@@ -110,6 +122,41 @@ function ProgressRing({ done, total }) {
   );
 }
 
+// ── Week preview — brug naar de Aankomend-kalender ─
+function WeekPreview({ commitments }) {
+  const monday = mondayOf(new Date());
+  const today = new Date().toISOString().slice(0, 10);
+  const weekDates = Array.from({ length: 7 }, (_, i) => {
+    const d = new Date(monday);
+    d.setDate(monday.getDate() + i);
+    return d.toISOString().slice(0, 10);
+  });
+
+  return (
+    <Link href="/upcoming" className="week-preview">
+      <div className="week-preview-header">
+        <span>Deze week</span>
+        <span className="week-preview-link">
+          Kalender <ChevronRight size={13} strokeWidth={2} />
+        </span>
+      </div>
+      <div className="week-preview-row">
+        {weekDates.map((d, i) => {
+          const count = commitments.filter((c) => isDueOnDate(c, d)).length;
+          const isToday = d === today;
+          return (
+            <div key={d} className={`week-preview-day ${isToday ? "today" : ""}`}>
+              <span className="week-preview-label">{DAY_LABELS[i]}</span>
+              <span className="week-preview-num">{Number(d.slice(8, 10))}</span>
+              <span className={`week-preview-count ${count === 0 ? "zero" : ""}`}>{count}</span>
+            </div>
+          );
+        })}
+      </div>
+    </Link>
+  );
+}
+
 // ── Page ──────────────────────────────────────────
 export default async function DashboardPage() {
   const supabase = createClient();
@@ -184,7 +231,7 @@ export default async function DashboardPage() {
     <>
       <Nav pendingReviewCount={pendingReviewCount} />
       <div className="shell">
-        <div className="dashboard-header" style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+        <div className="home-hero">
           <div>
             <div className="dashboard-greeting">{getGreeting()}, {firstName}</div>
             <div className="dashboard-date">{capitalize(getFullDate())}</div>
@@ -238,17 +285,9 @@ export default async function DashboardPage() {
         ))}
 
         {hasAnyCommitments && (
-          <Link
-            href="/upcoming"
-            style={{
-              display: "flex", alignItems: "center", justifyContent: "center", gap: 6,
-              marginTop: 16, padding: "12px", fontSize: 13, fontWeight: 600,
-              color: "var(--muted)", textDecoration: "none",
-            }}
-          >
-            <CalendarDays size={15} strokeWidth={2} />
-            Bekijk aankomende dagen
-          </Link>
+          <div style={{ marginTop: 20 }}>
+            <WeekPreview commitments={commitments} />
+          </div>
         )}
       </div>
 

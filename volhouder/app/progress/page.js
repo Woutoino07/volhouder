@@ -169,7 +169,7 @@ export default async function ProgressPage() {
   return (
     <>
       <Nav />
-      <div className="shell">
+      <div className="shell shell-wide">
         <div className="dashboard-header">
           <div className="dashboard-greeting">Inzichten</div>
           <div className="dashboard-date">Gewoontes en progressie in één oogopslag</div>

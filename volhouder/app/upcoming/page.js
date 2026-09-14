@@ -3,12 +3,12 @@ import Nav from "@/components/Nav";
 import { createClient } from "@/lib/supabase/server";
 import { isDueOnDate } from "@/lib/schedule";
 import { inferIcon } from "@/lib/icons";
-import { ChevronLeft, ChevronRight, Plus } from "lucide-react";
+import { ChevronLeft, ChevronRight, Plus, Repeat } from "lucide-react";
 
 const DAY_LABELS = ["ma", "di", "wo", "do", "vr", "za", "zo"];
 const HOUR_START = 6;
-const HOUR_END = 22;
-const HOUR_HEIGHT = 48; // px per uur
+const HOUR_END = 24;
+const HOUR_HEIGHT = 56; // px per uur
 const BODY_HEIGHT = (HOUR_END - HOUR_START) * HOUR_HEIGHT;
 
 function mondayOf(date) {
@@ -27,16 +27,11 @@ function accentOf(status) {
   return "pending";
 }
 
-function ChipIcon({ title }) {
-  const Icon = inferIcon(title);
-  return <Icon size={10} strokeWidth={2.25} style={{ flexShrink: 0 }} />;
-}
-
 export default async function UpcomingPage({ searchParams }) {
   const offset = parseInt(searchParams?.week || "0", 10) || 0;
 
   const supabase = createClient();
-  const { data: { user } } = await supabase.auth.getUser();
+  await supabase.auth.getUser();
 
   const monday = mondayOf(new Date());
   monday.setDate(monday.getDate() + offset * 7);
@@ -52,7 +47,7 @@ export default async function UpcomingPage({ searchParams }) {
 
   const { data: commitments } = await supabase
     .from("commitments")
-    .select("id, title, frequency, days_of_week, once_date, deadline_time")
+    .select("id, title, frequency, days_of_week, once_date, deadline_time, proof_type")
     .eq("active", true);
 
   const ids = (commitments || []).map((c) => c.id);
@@ -69,15 +64,24 @@ export default async function UpcomingPage({ searchParams }) {
   const statusByKey = {};
   for (const c of checkIns) statusByKey[`${c.commitment_id}_${c.due_date}`] = c.status;
 
-  const habits = (commitments || []).filter((c) => c.frequency !== "once");
-  const tasks = (commitments || []).filter((c) => c.frequency === "once");
-
   const rangeLabel = `${new Date(weekDates[0] + "T12:00:00").toLocaleDateString("nl-BE", { day: "numeric", month: "short" })} – ${new Date(weekDates[6] + "T12:00:00").toLocaleDateString("nl-BE", { day: "numeric", month: "short" })}`;
+
+  // Elke actieve commitment krijgt een blok op zijn deadline-tijdstip, op
+  // elke dag waarop hij aan de beurt is — herhalend of eenmalig maakt voor
+  // de weergave niet uit, iedereen heeft nu eenmaal een concreet tijdstip.
+  const itemsByDay = {};
+  for (const d of weekDates) {
+    itemsByDay[d] = (commitments || [])
+      .filter((c) => isDueOnDate(c, d))
+      .map((c) => ({ commitment: c, status: statusByKey[`${c.id}_${d}`] }))
+      .sort((a, b) => (a.commitment.deadline_time || "").localeCompare(b.commitment.deadline_time || ""));
+  }
+  const totalDue = Object.values(itemsByDay).reduce((sum, arr) => sum + arr.length, 0);
 
   return (
     <>
       <Nav />
-      <div className="shell" style={{ maxWidth: 900 }}>
+      <div className="shell shell-wide">
         <div className="dashboard-header" style={{ display: "flex", alignItems: "flex-end", justifyContent: "space-between" }}>
           <div>
             <div className="dashboard-greeting" style={{ fontSize: 22 }}>Aankomend</div>
@@ -85,10 +89,17 @@ export default async function UpcomingPage({ searchParams }) {
           </div>
           <div style={{ display: "flex", gap: 4 }}>
             <Link href={`/upcoming?week=${offset - 1}`} className="cal-nav-btn"><ChevronLeft size={16} strokeWidth={2} /></Link>
-            {offset !== 0 && <Link href="/upcoming" className="cal-nav-btn" style={{ width: "auto", padding: "0 10px", fontSize: 11, fontWeight: 700 }}>Nu</Link>}
+            {offset !== 0 && <Link href="/upcoming" className="cal-nav-btn cal-nav-today">Nu</Link>}
             <Link href={`/upcoming?week=${offset + 1}`} className="cal-nav-btn"><ChevronRight size={16} strokeWidth={2} /></Link>
           </div>
         </div>
+
+        {totalDue === 0 && (
+          <div className="empty-hint" style={{ marginBottom: 16 }}>
+            <Repeat size={14} strokeWidth={2} />
+            Niets gepland deze week.
+          </div>
+        )}
 
         <div className="cal-wrap">
           <div className="cal-grid">
@@ -108,29 +119,9 @@ export default async function UpcomingPage({ searchParams }) {
               );
             })}
 
-            {/* All-day / gewoontes row */}
-            <div className="cal-allday-label">Gewoontes</div>
-            {weekDates.map((d) => {
-              const dueHabits = habits.filter((h) => isDueOnDate(h, d));
-              const isToday = d === today;
-              return (
-                <div key={d} className={`cal-allday-cell ${isToday ? "today-col" : ""}`}>
-                  {dueHabits.map((h) => {
-                    const status = statusByKey[`${h.id}_${d}`];
-                    return (
-                      <Link key={h.id} href={`/commitments/${h.id}`} className={`cal-chip ${accentOf(status)}`}>
-                        <ChipIcon title={h.title} />
-                        <span style={{ overflow: "hidden", textOverflow: "ellipsis" }}>{h.title}</span>
-                      </Link>
-                    );
-                  })}
-                </div>
-              );
-            })}
-
             {/* Time axis */}
             <div className="cal-time-axis" style={{ height: BODY_HEIGHT }}>
-              {Array.from({ length: HOUR_END - HOUR_START + 1 }, (_, i) => HOUR_START + i).map((h) => (
+              {Array.from({ length: HOUR_END - HOUR_START }, (_, i) => HOUR_START + i).map((h) => (
                 <span key={h} className="cal-time-label" style={{ top: (h - HOUR_START) * HOUR_HEIGHT }}>
                   {String(h).padStart(2, "0")}:00
                 </span>
@@ -139,7 +130,7 @@ export default async function UpcomingPage({ searchParams }) {
 
             {/* Day bodies */}
             {weekDates.map((d) => {
-              const dueTasks = tasks.filter((t) => t.once_date === d);
+              const items = itemsByDay[d];
               const isToday = d === today;
               return (
                 <div
@@ -155,23 +146,22 @@ export default async function UpcomingPage({ searchParams }) {
                       <span className="cal-now-dot" />
                     </div>
                   )}
-                  {dueTasks.map((t) => {
-                    const [hh, mm] = (t.deadline_time || "08:00").split(":").map(Number);
+                  {items.map(({ commitment, status }) => {
+                    const [hh, mm] = (commitment.deadline_time || "08:00").split(":").map(Number);
                     const clampedHour = Math.min(Math.max(hh, HOUR_START), HOUR_END - 1);
                     const top = (clampedHour - HOUR_START) * HOUR_HEIGHT + (mm / 60) * HOUR_HEIGHT;
-                    const status = statusByKey[`${t.id}_${d}`];
-                    const Icon = inferIcon(t.title);
+                    const Icon = inferIcon(commitment.title);
                     return (
                       <Link
-                        key={t.id}
-                        href={`/commitments/${t.id}`}
+                        key={commitment.id}
+                        href={`/commitments/${commitment.id}`}
                         className={`cal-task-block ${accentOf(status)}`}
                         style={{ top }}
                       >
                         <span className="cal-task-time">
-                          <Icon size={9} strokeWidth={2.25} /> {t.deadline_time?.slice(0, 5)}
+                          <Icon size={9} strokeWidth={2.25} /> {commitment.deadline_time?.slice(0, 5)}
                         </span>
-                        <span className="cal-task-title">{t.title}</span>
+                        <span className="cal-task-title">{commitment.title}</span>
                       </Link>
                     );
                   })}
@@ -182,7 +172,7 @@ export default async function UpcomingPage({ searchParams }) {
         </div>
       </div>
 
-      <Link href="/commitments/new" className="fab" title="Nieuwe commitment">
+      <Link href="/commitments/new" className="fab wide" title="Nieuwe commitment">
         <Plus size={22} strokeWidth={2} />
       </Link>
     </>
